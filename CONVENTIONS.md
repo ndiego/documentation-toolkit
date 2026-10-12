@@ -18,8 +18,12 @@ not a style preference. Voice, grammar and terminology are the Docs team's style
   importer subclass rewrites them to notice markup. Raw `.callout-*` divs (the Block Editor's current style) are not
   styled on GitHub and do not parse Markdown inside.
 - **Shortcodes in prose stay escaped** (`[[audio]]`), and block-markup comments only ever appear inside code fences.
-- **Images may keep absolute `developer.wordpress.org/files/` URLs** when a handbook's media stays in the library;
-  relative in-repo images are the HelpHub choice. Either is fine; pick per handbook and record it.
+- **Images live in the repo as compressed WebP** (animated WebP for animations) under `assets/`, referenced by relative
+  path, with alt text carried verbatim. The importer subclass sideloads them into the site's media library at import
+  (as the Playground importer does), so the site never serves from GitHub. Keeping absolute
+  `developer.wordpress.org/files/` URLs (the Block Editor's current practice) also imports fine but leaves image
+  updates outside the pull request flow. **Video and other large media are never stored in Git**; host them on
+  wordpress.org or YouTube and embed by URL.
 
 ## What the importer actually does
 
