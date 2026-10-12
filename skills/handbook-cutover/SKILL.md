@@ -1,6 +1,6 @@
 ---
 name: handbook-cutover
-description: Plan or execute the cutover of a wordpress.org handbook from wp-admin editing to a GitHub Markdown source imported by developer.wordpress.org, in the order that avoids duplicate posts, lost edits, and a diverged mirror. Use when a handbook repo is ready to go live, or when asked how a handbook migration should be sequenced.
+description: Plan or execute the cutover of a WordPress.org handbook from wp-admin editing to a GitHub Markdown source imported by developer.wordpress.org, in the order that avoids duplicate posts, lost edits, and a diverged mirror. Use when a handbook repo is ready to go live, or when asked how a handbook migration should be sequenced.
 ---
 
 # Handbook cutover (wp-admin → GitHub source)

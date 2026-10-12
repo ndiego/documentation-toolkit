@@ -1,4 +1,4 @@
-# Markdown conventions for wordpress.org handbooks
+# Markdown conventions for WordPress.org handbooks
 
 Started 2026-10-07 for HelpHub; promoted to the toolkit 2026-10-12 as the cross-handbook version. Target: the
 `wporg-markdown` importer used for the Block Editor, Playground, Secure Custom Fields, Coding Standards and Advanced
@@ -23,7 +23,7 @@ not a style preference. Voice, grammar and terminology are the Docs team's style
   (as the Playground importer does), so the site never serves from GitHub. Keeping absolute
   `developer.wordpress.org/files/` URLs (the Block Editor's current practice) also imports fine but leaves image
   updates outside the pull request flow. **Video and other large media are never stored in Git**; host them on
-  wordpress.org or YouTube and embed by URL.
+  WordPress.org or YouTube and embed by URL.
 
 ## What the importer actually does
 
@@ -73,7 +73,7 @@ YouTube as raw `<iframe>` (allowed by their subclass), `{% codetabs %}` for tabb
 - Keep URLs flat (`/article/<slug>/`) and map folders to categories in a HelpHub importer subclass.
 - Astro Starlight is a disposable preview renderer in `site/`; nothing framework-specific goes into `docs/`.
 - Changelog sections stay in the body for now; likely dropped in favour of git history later.
-- "Was this article helpful?" is out of scope here; it will be a wordpress.org theme feature (or an
+- "Was this article helpful?" is out of scope here; it will be a WordPress.org theme feature (or an
   "Edit on GitHub" link).
 - Media: in-repo copies under docs/assets for now; long-term home still open.
 
@@ -87,6 +87,6 @@ YouTube as raw `<iframe>` (allowed by their subclass), `{% codetabs %}` for tabb
    HelpHub theme may style `.wp-block-*` classes. Either accept classic HTML output, or use the
    `WordPress/php-toolkit` Markdown-to-blocks component in the subclass.
 3. Image hosting. Keep images in the repo (reviewable in PRs, importer sideloads like Playground does) or
-   keep pointing at the wordpress.org media library (zero work, but screenshots can't be updated via PR).
+   keep pointing at the WordPress.org media library (zero work, but screenshots can't be updated via PR).
 4. Changelog sections. Hand-written in 213 articles today. Keep in body, or move to git history?
 5. "Was this article helpful?" has no static/GitHub equivalent. Replace with "Edit on GitHub" / issue link?

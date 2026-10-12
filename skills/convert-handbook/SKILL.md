@@ -1,6 +1,6 @@
 ---
 name: convert-handbook
-description: Convert a wordpress.org handbook (or any WordPress-rendered HTML) to importer-ready Markdown with the toolkit converter, following the cross-handbook conventions. Use when asked to convert, export, or migrate handbook pages to Markdown, or to regenerate a handbook's Markdown from the site.
+description: Convert a WordPress.org handbook (or any WordPress-rendered HTML) to importer-ready Markdown with the toolkit converter, following the cross-handbook conventions. Use when asked to convert, export, or migrate handbook pages to Markdown, or to regenerate a handbook's Markdown from the site.
 ---
 
 # Convert a handbook to Markdown
