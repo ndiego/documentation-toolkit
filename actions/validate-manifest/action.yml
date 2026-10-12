@@ -1,0 +1,38 @@
+name: Validate handbook manifest
+description: >-
+  Validates a wporg-markdown importer manifest.json (path-keyed, parents first, no slug takeovers, GitHub blob
+  sources, one H1 per file, no raw block markup) so a merge cannot break the developer.wordpress.org import.
+inputs:
+  manifest:
+    description: Path to manifest.json
+    required: true
+    default: manifest.json
+  docs:
+    description: Directory the markdown_source paths resolve under (usually the repo root)
+    required: false
+    default: .
+  frozen:
+    description: Optional JSON file listing the keys that must keep existing (and their frozen order)
+    required: false
+    default: ''
+  allow-missing-parent:
+    description: Space-separated keys whose parent is intentionally absent from the manifest
+    required: false
+    default: ''
+  strict:
+    description: Treat warnings as errors
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - shell: bash
+      run: |
+        ARGS=("${{ inputs.manifest }}" --docs "${{ inputs.docs }}")
+        if [ -n "${{ inputs.frozen }}" ]; then ARGS+=(--frozen "${{ inputs.frozen }}"); fi
+        if [ -n "${{ inputs.allow-missing-parent }}" ]; then ARGS+=(--allow-missing-parent ${{ inputs.allow-missing-parent }}); fi
+        if [ "${{ inputs.strict }}" = "true" ]; then ARGS+=(--strict); fi
+        python3 -I "${{ github.action_path }}/../../manifest/validate_manifest.py" "${ARGS[@]}"
