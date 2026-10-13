@@ -27,19 +27,38 @@ import argparse
 import collections
 import html as _html
 import importlib.util
+import os
 import pathlib
 import sys
 
 CALLOUT_STYLES = ("gfm-alert", "gutenberg", "shortcode")
 _CORE = None
-_REPO = pathlib.Path(__file__).resolve().parents[2]
+_TOOLKIT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def _core_path():
+    """Locate the converter core (`scripts/convert.py` in wp-documentation-migration).
+
+    Until the core is extracted into this repository it is found through the WP_MARKDOWN_CORE
+    environment variable, or in a sibling checkout of wp-documentation-migration.
+    """
+    env = os.environ.get("WP_MARKDOWN_CORE")
+    candidates = [pathlib.Path(env)] if env else []
+    candidates.append(_TOOLKIT.parent / "wp-documentation-migration" / "scripts" / "convert.py")
+    for path in candidates:
+        if path.is_file():
+            return path
+    raise FileNotFoundError(
+        "converter core not found; set WP_MARKDOWN_CORE to the path of scripts/convert.py from "
+        "wp-documentation-migration (tried: %s)" % ", ".join(str(c) for c in candidates)
+    )
 
 
 def _core():
-    """Load scripts/convert.py once, without running its CLI."""
+    """Load the converter core once, without running its CLI."""
     global _CORE
     if _CORE is None:
-        path = _REPO / "scripts" / "convert.py"
+        path = _core_path()
         spec = importlib.util.spec_from_file_location("wp_markdown_core", path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
