@@ -13,29 +13,24 @@ Requirements: Node 22.19 or newer (24 recommended), about 1 GB of disk for depen
 database, no local WordPress install.
 
 The engine is consumed from a *project directory* inside a documentation repo that holds `shots.config.js`, a
-Playground `blueprint/`, and YAML specs under `shots/`.
-
-Until the package is on npm, depend on it as a path into a checkout of this repository (pinned at a tag):
+Playground `blueprint/` (or a reference to the bundled demo site), and YAML specs.
 
 ```sh
-# in the documentation repo
-git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
-( cd toolkit && git checkout v0.3.3 && npm ci )          # the engine's dependencies live in the toolkit checkout
+npm install -D @wp-docs-toolkit/screenshots
+npx playwright install chromium            # once per machine
 ```
 
 ```json
 {
-  "scripts": {
-    "shots": "wp-screenshots",
-    "postinstall": "npm exec --prefix ../toolkit -- playwright install chromium"
-  },
-  "dependencies": {
-    "@wp-docs-toolkit/screenshots": "file:../toolkit/packages/screenshots"
-  }
+  "scripts": { "shots": "wp-screenshots" }
 }
 ```
 
-Then, in the project directory: `npm install` and `npx wp-screenshots doctor`.
+Then, in the project directory: `npx wp-screenshots doctor`. For a screenshot with nothing set up at all, or by
+prompt from Claude or ChatGPT, see [`@wp-docs-toolkit/mcp`](https://www.npmjs.com/package/@wp-docs-toolkit/mcp).
+
+A project that would rather track a git tag than an npm version can use the repository as a submodule and depend
+on `file:../toolkit/packages/screenshots`; the repository README has the details.
 
 ## Commands
 

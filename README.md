@@ -60,9 +60,16 @@ Code plugin (below) or connect the MCP server (`packages/mcp/`) to Claude Deskto
 
 Pin a tag, never a branch (rule 4 below). Every package shares the repository version.
 
-**npm packages.** `@wp-docs-toolkit/screenshots`, `@wp-docs-toolkit/manifest`, `@wp-docs-toolkit/demo-site` and
-`@wp-docs-toolkit/mcp`, one shared version. A documentation project depends on `@wp-docs-toolkit/screenshots`
-from npm. The submodule route below still works for a project that wants to track a git tag instead:
+**npm packages**, one shared version:
+
+| Who | Installs |
+|---|---|
+| A documentation repo that renders its own screenshots | `npm install -D @wp-docs-toolkit/screenshots` |
+| A handbook repo that validates its manifest in CI | `npm install -D @wp-docs-toolkit/manifest`, or the action below |
+| A person who wants screenshots by prompt in Claude or ChatGPT | `npx -y @wp-docs-toolkit/mcp install` |
+
+`@wp-docs-toolkit/demo-site` comes along with the engine. The submodule route below still works for a project
+that wants to track a git tag instead:
 
 ```sh
 git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit

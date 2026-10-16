@@ -2,10 +2,21 @@
 
 The WordPress Playground environment the documentation screenshots are taken in: a blueprint, a small mu-plugin
 that keeps wp-admin clean and deterministic, the Ipsum theme (the proposed WordPress 7.2 default, vendored), and a
-demo content pack with a per-block showcase. The engine knows nothing about what is in here beyond what this file
-promises (see "Environment contract" in the engine's `ARCHITECTURE.md`). A project points at it with
-`blueprint: '<path to>/packages/demo-site/blueprint.json'` in `shots.config.js`; the example project in
-`examples/block-editor-handbook/` does exactly that.
+demo content pack with a per-block showcase. It is data, not code: no JavaScript runs from this package.
+
+`@wp-docs-toolkit/screenshots` depends on it and uses it whenever a project has no `shots.config.js` (the
+zero-config `shoot` path, and the MCP server). A project that wants this site for its own specs points at it:
+
+```js
+// shots.config.js
+import { createRequire } from 'node:module';
+const demoSite = createRequire( import.meta.url ).resolve( '@wp-docs-toolkit/demo-site/blueprint.json' );
+export default { blueprint: demoSite, /* … */ };
+```
+
+or copies the directory to start its own demo site (the slug contract below is what must survive the copy). The
+engine knows nothing about what is in here beyond what this file promises (see "Environment contract" in the
+engine's `ARCHITECTURE.md`).
 
 ```
 demo-site/

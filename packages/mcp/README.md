@@ -23,64 +23,41 @@ in the documentation project; the tool says so in its result.
 
 ## Setup
 
-### The short way
+Requirements: Node 22.19 or newer. Chromium (about 150 MB) and a WordPress build download on the first screenshot.
 
-Once the package is on npm (any platform with Node 22.19+):
+### One command
 
 ```sh
 npx -y @wp-docs-toolkit/mcp install
 ```
 
-It registers the server in Claude Desktop and, when the `claude` CLI exists, Claude Code, writing absolute paths so
-the desktop app finds Node even when it comes from nvm, Homebrew or Volta. Chromium downloads on the first
-screenshot. `npx -y @wp-docs-toolkit/mcp uninstall` removes the entries. Flags: `--config <file>` for another Claude
-Desktop config, `--no-claude-code`, `--via path` to launch the local copy directly instead of through npx.
+Registers the server in Claude Desktop and, when the `claude` CLI exists, in Claude Code, writing absolute paths so
+the desktop app finds Node even when it comes from nvm, Homebrew or Volta. Restart Claude Desktop afterwards. The
+same command later updates to the newest version; `npx -y @wp-docs-toolkit/mcp uninstall` removes the entries.
+Flags: `--config <file>` for another Claude Desktop config, `--no-claude-code`.
 
-Until it is published, the same from a git checkout (macOS, Linux):
+### By hand
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/ndiego/wp-docs-toolkit/trunk/scripts/install.sh | sh
-```
-
-which clones into `~/.wp-docs-toolkit`, installs dependencies and Chromium, then runs the same registration.
-
-### The manual way
-
-Once, on the machine that will run the server:
-
-```sh
-git clone https://github.com/ndiego/wp-docs-toolkit.git && cd wp-docs-toolkit
-npm ci && npm run setup          # dependencies, then Chromium for Playwright
-```
-
-The server starts with `node packages/mcp/src/cli.js` (or `npx wp-docs-mcp` from inside the checkout).
-
-### Claude Desktop
-
-Add to `claude_desktop_config.json` (Settings → Developer → Edit Config), with the absolute path to your checkout:
+Claude Desktop: add to `claude_desktop_config.json` (Settings → Developer → Edit Config):
 
 ```json
 {
   "mcpServers": {
     "wp-docs-toolkit": {
-      "command": "node",
-      "args": [ "/path/to/wp-docs-toolkit/packages/mcp/src/cli.js" ]
+      "command": "npx",
+      "args": [ "-y", "@wp-docs-toolkit/mcp" ]
     }
   }
 }
 ```
 
-Restart Claude Desktop, then ask: "Take a screenshot of the General Settings page in wp-admin." The image comes
-back in the conversation.
+If the server never appears, the app could not find `npx` on its PATH; put the absolute path to your Node binary in
+`command` and `.../lib/node_modules/npm/bin/npx-cli.js` as the first argument, which is what `install` writes.
 
-### Claude Code
+Claude Code: `claude mcp add wp-docs-toolkit -- npx -y @wp-docs-toolkit/mcp`. A checkout of the toolkit repository
+also carries a `.mcp.json`, so opening it in Claude Code offers the server automatically.
 
-The repository carries a `.mcp.json`, so opening the checkout in Claude Code offers the server automatically.
-From any other project:
-
-```sh
-claude mcp add wp-docs-toolkit -- node /path/to/wp-docs-toolkit/packages/mcp/src/cli.js
-```
+Other stdio clients (Cursor, Zed, …): command `npx`, arguments `-y @wp-docs-toolkit/mcp`.
 
 ### ChatGPT and other remote clients
 
@@ -107,7 +84,15 @@ By default the server renders against the bundled demo site. To use a documentat
 style, point it at the project's config:
 
 ```sh
-node packages/mcp/src/cli.js --project /path/to/docs-repo/screenshots/shots.config.js
+npx -y @wp-docs-toolkit/mcp --project /path/to/docs-repo/screenshots/shots.config.js
+```
+
+### Developing the server
+
+```sh
+git clone https://github.com/ndiego/wp-docs-toolkit.git && cd wp-docs-toolkit
+npm ci && npm run setup
+node packages/mcp/src/cli.js install --via path     # register this checkout instead of the npm package
 ```
 
 ## Example prompts
@@ -120,8 +105,8 @@ node packages/mcp/src/cli.js --project /path/to/docs-repo/screenshots/shots.conf
 - "The Image block's Settings tab with the Resolution control outlined."
 - "Validate docs/manifest.json against the docs folder."
 
-## Development
+## Tests
 
 ```sh
-npm test -w @wp-docs-toolkit/mcp      # tool contract tests over an in-memory transport
+npm test -w @wp-docs-toolkit/mcp      # tool contract, HTTP auth and install tests
 ```

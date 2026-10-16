@@ -1,14 +1,24 @@
 # @wp-docs-toolkit/manifest
 
-`wp-validate-manifest` checks a `manifest.json` for the `wporg-markdown` importer used on developer.wordpress.org.
-The checks come from the importer's actual behaviour (`notes/theme-handbook-migration/research/02-pipeline-precedents.md`
-§1.3, §5.6) and from imports that failed on manifest errors (Advanced Administration 2023, Accessibility 2026).
+Validates a handbook's `manifest.json` for the `wporg-markdown` importer that publishes GitHub-sourced handbooks
+on developer.wordpress.org. Every check corresponds to something the importer does (or fails to protect against),
+and several come from imports that broke in production. No runtime dependencies; Node 22.19 or later.
 
-No runtime dependencies; Node 22.19 or later.
+Part of [wp-docs-toolkit](https://github.com/ndiego/wp-docs-toolkit). The research behind the checks is in the
+[wp-documentation-migration](https://github.com/ndiego/wp-documentation-migration) repo.
 
 ## Run
 
+One-off, nothing installed:
+
+```sh
+npx -y -p @wp-docs-toolkit/manifest wp-validate-manifest manifest.json --docs .
 ```
+
+In a handbook repo, as a dev dependency so CI and contributors run the same version:
+
+```sh
+npm install -D @wp-docs-toolkit/manifest
 npx wp-validate-manifest manifest.json --docs . --frozen frozen-paths.json \
     [--allow-missing-parent <key> ...] [--strict]
 ```

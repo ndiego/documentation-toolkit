@@ -2,6 +2,10 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
+## Unreleased
+
+- READMEs rewritten for npm readers: install from the registry first, the git checkout as the development path.
+
 ## 0.3.3 (2026-10-16)
 
 - Screenshots: dropped `@wordpress/e2e-test-utils-playwright`. The ten helpers the engine used live in `src/wp.js`
