@@ -2,6 +2,13 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
+## Unreleased
+
+- New package `@wp-docs-toolkit/mcp`: an MCP server (stdio, or Streamable HTTP with `--http`) with `screenshot`,
+  `list_presets` and `validate_manifest` tools, so Claude Desktop, Claude Code, ChatGPT and other MCP clients can
+  take screenshots by asking. The repo's `.mcp.json` registers it for Claude Code. `shootPreset()` is now a library
+  function of `@wp-docs-toolkit/screenshots` (the CLI's `shoot` uses it) and can pick a free Playground port.
+
 ## 0.2.1 (2026-10-16)
 
 - **Renamed** from `documentation-toolkit` to `wp-docs-toolkit` (repository `ndiego/wp-docs-toolkit`; the old URL

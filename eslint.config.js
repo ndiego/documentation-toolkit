@@ -19,6 +19,16 @@ export default [
 		},
 	},
 	{
+		// The MCP SDK publishes subpath exports (package.json "exports"); the import resolver cannot see them.
+		files: [ 'packages/mcp/**/*.js' ],
+		rules: {
+			'import/no-unresolved': [
+				'error',
+				{ ignore: [ '^@modelcontextprotocol/sdk/' ] },
+			],
+		},
+	},
+	{
 		// Code that runs inside the browser page (annotation overlay, page.evaluate callbacks).
 		files: [ 'packages/screenshots/src/annotate.js' ],
 		languageOptions: { globals: { ...globals.browser, ...globals.node } },

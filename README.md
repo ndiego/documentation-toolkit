@@ -9,6 +9,7 @@ pipeline and preview site live in that handbook's own repo.
 |---|---|---|
 | `packages/screenshots/` | `@wp-docs-toolkit/screenshots`: reproducible WordPress UI screenshots from YAML specs (WordPress Playground + Playwright). Binary `wp-screenshots`. | A documentation repo depends on it and runs `wp-screenshots` from a project directory holding `shots.config.js`, a blueprint and specs. [README](packages/screenshots/README.md), [ARCHITECTURE](packages/screenshots/ARCHITECTURE.md). |
 | `packages/demo-site/` | `@wp-docs-toolkit/demo-site`: the Playground environment screenshots are taken in. Pinned WordPress 7.1 and PHP 8.3, the Ipsum theme (the proposed 7.2 default, vendored), a clean wp-admin, a deterministic demo content pack with a per-block showcase. | A project sets `blueprint` in `shots.config.js` to its `blueprint.json`. [README](packages/demo-site/README.md). |
+| `packages/mcp/` | `@wp-docs-toolkit/mcp`: an MCP server exposing `screenshot`, `list_presets` and `validate_manifest` to Claude Desktop, Claude Code, ChatGPT or any MCP client. Binary `wp-docs-mcp`, stdio or Streamable HTTP. | Point the client at `node packages/mcp/src/cli.js`; the repo's `.mcp.json` does it for Claude Code. [README](packages/mcp/README.md). |
 | `packages/manifest/` | `@wp-docs-toolkit/manifest`: validator for `wporg-markdown` importer manifests (path keys, parents first, slug takeover, GitHub sources, one H1, no raw block markup, frozen keys). Binary `wp-validate-manifest`, no dependencies. | `npx wp-validate-manifest manifest.json --docs . --frozen …` locally; the action below in CI. [README](packages/manifest/README.md). |
 | `actions/validate-manifest/` | GitHub composite action wrapping the validator. | `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@<tag>` |
 | `style/CONVENTIONS.md` | The Markdown conventions every handbook repo follows, derived from importer behaviour. | Read before writing or converting content; linked from each handbook's CONTRIBUTING. |
@@ -31,8 +32,8 @@ npm run shoot -- --preset site-editor --out ~/Desktop/site-editor.webp
 That boots the bundled demo site (WordPress 7.1, the Ipsum theme, demo content), renders the subject on a
 canonical frame and writes the image. `npx wp-screenshots presets` lists the subjects and their parameters, for
 example `--preset block-settings --block core/image --tab styles`. From any other directory, the same works with
-`npx --prefix path/to/wp-docs-toolkit wp-screenshots shoot …`; with the Claude Code plugin installed (below),
-you can also just ask for the screenshot in words.
+`npx --prefix path/to/wp-docs-toolkit wp-screenshots shoot …`. To ask for it in words instead, install the Claude
+Code plugin (below) or connect the MCP server (`packages/mcp/`) to Claude Desktop, ChatGPT or any MCP client.
 
 ## Consuming it
 
