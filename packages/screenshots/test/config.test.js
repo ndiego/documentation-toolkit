@@ -222,3 +222,41 @@ describe( 'blueprintForSuite', () => {
 		);
 	} );
 } );
+
+describe( 'zero-config fallback', () => {
+	it( 'uses the bundled demo site when no config exists and fallback is requested', async () => {
+		const empty = fs.mkdtempSync(
+			path.join( os.tmpdir(), 'wp-screenshots-nocfg-' )
+		);
+		const cwd = process.cwd();
+		process.chdir( empty );
+		try {
+			const config = await loadConfig( undefined, { fallback: true } );
+			assert.equal( config.fallback, true );
+			assert.equal( config.configFile, null );
+			assert.ok(
+				config.blueprint.endsWith(
+					path.join( 'demo-site', 'blueprint.json' )
+				)
+			);
+			assert.ok( fs.existsSync( config.blueprint ) );
+			assert.equal( config.docsDir, null );
+			assert.ok(
+				config.outDir.startsWith( fs.realpathSync( os.tmpdir() ) ) ||
+					config.outDir.startsWith( os.tmpdir() )
+			);
+			assert.equal( config.wordpress.version, '7.1.3' );
+			await assert.rejects(
+				() => loadConfig( undefined ),
+				/Config not found/
+			);
+			await assert.rejects(
+				() => loadConfig( 'nope.config.js', { fallback: true } ),
+				/Config not found/
+			);
+		} finally {
+			process.chdir( cwd );
+			fs.rmSync( empty, { recursive: true, force: true } );
+		}
+	} );
+} );

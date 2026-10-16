@@ -20,7 +20,9 @@ framing; override only what the request needs. `npx wp-screenshots presets` list
 - "the block toolbar" → `preset: block-toolbar`
 - "a screenshot of the site editor" / "the Styles view" → `preset: site-editor` [, `view: styles`]
 - "the Plugins screen" → `preset: admin-screen`, `screen: plugins.php`
-- one image right now, no spec: `npx wp-screenshots shoot --preset site-editor --out site-editor.webp`
+- one image right now, no spec, no project: `npx wp-screenshots shoot --preset site-editor --out site-editor.webp`
+  works from any directory; without a `shots.config.js` it boots the toolkit's bundled demo site. If Chromium is
+  missing it says so and gives the install command.
 
 Highlight with one annotation type per image: `outline` by default, `arrow` when the target is small or has
 lookalikes, numbered `badge` for enumerated steps, `dim` for noisy surroundings. Read `style/SCREENSHOTS.md` in the

@@ -12,6 +12,8 @@
 		"node": ">=22.19"
 	},
 	"scripts": {
+		"setup": "playwright install chromium",
+		"shoot": "wp-screenshots shoot",
 		"lint": "eslint . && prettier --check .",
 		"format": "prettier --write .",
 		"test": "npm test --workspaces --if-present"

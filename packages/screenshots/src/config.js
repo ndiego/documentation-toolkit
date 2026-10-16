@@ -1,5 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
+import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { mergeStyle } from './style.js';
 
@@ -26,18 +28,32 @@ const DEFAULTS = {
 
 /**
  * Load `shots.config.js` (or the file given) and resolve every path against its directory.
- * @param {string} [configPath]
+ *
+ * With `fallback`, a missing config is not an error: the engine runs against the bundled demo site
+ * (`@wporg-docs/demo-site`) with output and working files in a temp directory, which is what makes
+ * `wp-screenshots shoot` work from any directory with nothing set up.
+ * @param {string}  [configPath]
+ * @param {Object}  [options]
+ * @param {boolean} [options.fallback] use the bundled demo site when no config is found
  */
-export async function loadConfig( configPath ) {
+export async function loadConfig( configPath, options = {} ) {
 	const file = path.resolve( configPath || findConfig( process.cwd() ) );
-	if ( ! fs.existsSync( file ) ) {
+	let user;
+	let root;
+	let fallback = false;
+	if ( fs.existsSync( file ) ) {
+		const mod = await import( pathToFileURL( file ).href );
+		user = mod.default || mod;
+		root = path.dirname( file );
+	} else if ( options.fallback && ! configPath ) {
+		user = demoSiteConfig();
+		root = process.cwd();
+		fallback = true;
+	} else {
 		throw new Error(
-			`Config not found: ${ file }. Run from the project directory (the one holding shots.config.js) or pass --config.`
+			`Config not found: ${ file }. Run from the project directory (the one holding shots.config.js) or pass --config. For a one-off image with no project, \`wp-screenshots shoot --preset <name>\` needs no config.`
 		);
 	}
-	const mod = await import( pathToFileURL( file ).href );
-	const user = mod.default || mod;
-	const root = path.dirname( file );
 	const merged = {
 		...DEFAULTS,
 		...user,
@@ -58,7 +74,8 @@ export async function loadConfig( configPath ) {
 	return {
 		...merged,
 		root,
-		configFile: file,
+		configFile: fallback ? null : file,
+		fallback,
 		specs,
 		// Spec paths are reported relative to this directory.
 		specsBase: specs ? root : resolve( merged.shotsDir ),
@@ -70,6 +87,26 @@ export async function loadConfig( configPath ) {
 		suitesDir: resolve( merged.suitesDir ),
 		workDir: resolve( merged.workDir ),
 		style,
+	};
+}
+
+/**
+ * The zero-config project: the bundled demo site, everything else in a temp directory.
+ * @return {Object} user-level config values (resolved against the cwd by loadConfig)
+ */
+export function demoSiteConfig() {
+	const require = createRequire( import.meta.url );
+	const pkg = require.resolve( '@wporg-docs/demo-site/package.json' );
+	const scratch = path.join( os.tmpdir(), 'wp-screenshots' );
+	return {
+		blueprint: path.join( path.dirname( pkg ), 'blueprint.json' ),
+		suitesDir: path.join( path.dirname( pkg ), 'suites' ),
+		shotsDir: path.join( scratch, 'shots' ),
+		outDir: path.join( scratch, 'out' ),
+		docsDir: null,
+		docsManifest: null,
+		workDir: path.join( scratch, 'work' ),
+		wordpress: { version: '7.1.3', php: '8.3' },
 	};
 }
 

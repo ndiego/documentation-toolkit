@@ -2,7 +2,14 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
-## 0.2.0 (unreleased)
+## Unreleased
+
+- Screenshots: zero-config `shoot`. With no `shots.config.js` in reach, `shoot`, `doctor`, `presets` and `vocab`
+  run against the bundled demo site with working files in the temp directory. `@wporg-docs/screenshots` now
+  depends on `@wporg-docs/demo-site`. A missing Chromium is reported with the install command instead of a stack
+  trace. Root scripts `npm run setup` and `npm run shoot`.
+
+## 0.2.0 (2026-10-16)
 
 Restructured as an npm workspaces monorepo focused on maintaining WordPress.org documentation.
 

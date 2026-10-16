@@ -55,7 +55,10 @@ wp-screenshots doctor | list | vocab
 ```
 
 `shoot` is the "just give me one" path: `wp-screenshots shoot --preset site-editor --out site-editor.webp`
-renders a single image from a preset without a spec file.
+renders a single image from a preset without a spec file. It also needs no project: when no `shots.config.js` is
+found, `shoot` (and `doctor`, `presets`, `vocab`) fall back to the bundled demo site (`@wporg-docs/demo-site`)
+with working files in the temp directory, so it runs from any directory once Chromium is installed
+(`npx playwright install chromium`).
 
 | Command | What it does |
 |---|---|

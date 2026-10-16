@@ -20,6 +20,20 @@ Planned next: style enforcement (WordPress.org spelling, terminology and formatt
 skill that applies it). The Docs team style guide on make.wordpress.org/docs stays the source of truth; the toolkit
 only enforces it.
 
+## Quick start: one screenshot, nothing to configure
+
+```sh
+git clone https://github.com/ndiego/documentation-toolkit.git && cd documentation-toolkit
+npm ci && npm run setup                      # dependencies, then Chromium for Playwright (once)
+npm run shoot -- --preset site-editor --out ~/Desktop/site-editor.webp
+```
+
+That boots the bundled demo site (WordPress 7.1, the Ipsum theme, demo content), renders the subject on a
+canonical frame and writes the image. `npx wp-screenshots presets` lists the subjects and their parameters, for
+example `--preset block-settings --block core/image --tab styles`. From any other directory, the same works with
+`npx --prefix path/to/documentation-toolkit wp-screenshots shoot …`; with the Claude Code plugin installed (below),
+you can also just ask for the screenshot in words.
+
 ## Consuming it
 
 Pin a tag, never a branch (rule 4 below). Every package shares the repository version.

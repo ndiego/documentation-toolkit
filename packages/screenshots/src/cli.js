@@ -84,7 +84,15 @@ async function main() {
 			throw new UserError( `--${ k } needs a value` );
 		}
 	}
-	const config = await loadConfig( flags.config );
+	// Commands that need no specs run without a project: they fall back to the bundled demo site.
+	const config = await loadConfig( flags.config, {
+		fallback: [ 'shoot', 'presets', 'vocab', 'doctor' ].includes( command ),
+	} );
+	if ( config.fallback && command !== 'presets' && command !== 'vocab' ) {
+		console.log(
+			'No shots.config.js here: using the bundled demo site (output in the current directory, working files in the temp directory).'
+		);
+	}
 	if ( flags.port ) {
 		config.port = Number( flags.port );
 		if (
@@ -231,6 +239,7 @@ async function shoot( config, options ) {
 			`shoot needs --preset <name>. Known presets: ${ presetNames.join( ', ' ) } (run \`wp-screenshots presets\`).`
 		);
 	}
+	await requireChromium();
 	const params = {};
 	for ( const param of Object.keys( presets[ name ].params ) ) {
 		if ( options[ param ] !== undefined ) {
@@ -340,6 +349,19 @@ async function preview( config, filter, options ) {
 	return 0;
 }
 
+/**
+ * Fail early, with the fix, when Playwright's Chromium is not installed.
+ */
+async function requireChromium() {
+	const { chromium } = await import( '@playwright/test' );
+	const exe = chromium.executablePath();
+	if ( ! exe || ! fs.existsSync( exe ) ) {
+		throw new UserError(
+			'Chromium is not installed for Playwright. Run once: npx playwright install chromium'
+		);
+	}
+}
+
 async function doctor( config ) {
 	let ok = true;
 	const check = ( label, pass, hint = '' ) => {
@@ -355,7 +377,9 @@ async function doctor( config ) {
 		'Node 22.19+ is required by @wordpress/e2e-test-utils-playwright'
 	);
 	check(
-		`config ${ path.relative( process.cwd(), config.configFile ) }`,
+		config.fallback
+			? 'no shots.config.js: using the bundled demo site'
+			: `config ${ path.relative( process.cwd(), config.configFile ) }`,
 		true
 	);
 	check(
