@@ -4,7 +4,10 @@
  * Homebrew and Volta installs all break a bare "npx").
  *
  * The registered launch uses a Node the engine supports (its runtime policy says which): the current one when it
- * qualifies, otherwise the newest supported one found in nvm, Volta, fnm, asdf or Homebrew.
+ * qualifies, otherwise the newest supported one found in nvm, Volta, fnm, asdf or Homebrew. The launch also sets a
+ * PATH that starts with that Node's folder: npx hands the package's bin to the first `node` on PATH (the
+ * `#!/usr/bin/env node` shebang; npm prepends .bin folders, not the running Node's own), and on a desktop app's
+ * PATH that is usually Homebrew's newest Node, which the version choice would otherwise never reach.
  *
  * How the server is launched afterwards depends on where this copy lives:
  *   - run through `npx -y @wp-docs-toolkit/mcp` (npm's temporary cache): register `node <npx-cli.js> -y
@@ -53,26 +56,44 @@ export function desktopConfigPath() {
  * How to launch the server from any environment: absolute node binary plus arguments.
  * @param {'auto'|'npx'|'path'} via
  * @param {string|null}         [nodeBin] Node binary to register (default: the running one)
- * @return {{command: string, args: string[], how: string}} the launch spec
+ * @return {{command: string, args: string[], env: {PATH: string}, how: string}} the launch spec
  */
 export function launchSpec( via = 'auto', nodeBin = null ) {
 	const cli = path.join( here, 'cli.js' );
 	const inNpxCache = /[\\/]_npx[\\/]/.test( cli );
 	const useNpx = via === 'npx' || ( via === 'auto' && inNpxCache );
 	const node = nodeBin || process.execPath;
+	const env = launchEnv( node );
 	if ( useNpx ) {
 		const npxCli = npxCliFor( node );
 		return {
 			command: node,
 			args: [ npxCli, '-y', `${ pkg.name }@${ pkg.version }` ],
+			env,
 			how: `npx ${ pkg.name }@${ pkg.version } (Node at ${ node })`,
 		};
 	}
 	return {
 		command: node,
 		args: [ cli ],
+		env,
 		how: `${ cli } (Node at ${ node })`,
 	};
+}
+
+/**
+ * The environment a launch runs with: a PATH whose first entry is the chosen Node's folder, so anything that
+ * resolves `node` by name (npx's bin handoff, a shebang) lands on the same Node as `command`.
+ * @param {string} nodeBin    absolute path to the Node binary
+ * @param {string} [basePath] the PATH to keep after it (default: this process's)
+ * @return {{PATH: string}} env entries
+ */
+export function launchEnv( nodeBin, basePath = process.env.PATH || '' ) {
+	const dirs = [
+		path.dirname( nodeBin ),
+		...basePath.split( path.delimiter ),
+	].filter( Boolean );
+	return { PATH: [ ...new Set( dirs ) ].join( path.delimiter ) };
 }
 
 /**
@@ -138,8 +159,8 @@ export function chooseNode( explicit ) {
 
 /**
  * Merge our entry into a Claude Desktop config file, keeping everything else, backing the file up first.
- * @param {string}                            file
- * @param {{command: string, args: string[]}} spec
+ * @param {string}                                          file
+ * @param {{command: string, args: string[], env?: Object}} spec
  * @return {string} the backup path, or '' when the file did not exist
  */
 export function registerDesktop( file, spec ) {
@@ -158,6 +179,7 @@ export function registerDesktop( file, spec ) {
 	data.mcpServers[ 'wp-docs-toolkit' ] = {
 		command: spec.command,
 		args: spec.args,
+		...( spec.env ? { env: spec.env } : {} ),
 	};
 	fs.writeFileSync( file, JSON.stringify( data, null, 2 ) + '\n' );
 	return backup;
@@ -165,7 +187,7 @@ export function registerDesktop( file, spec ) {
 
 /**
  * Register with the Claude Code CLI in user scope, when it is installed.
- * @param {{command: string, args: string[]}} spec
+ * @param {{command: string, args: string[], env?: Object}} spec
  * @return {boolean} whether it was registered
  */
 export function registerClaudeCode( spec ) {
@@ -188,6 +210,10 @@ export function registerClaudeCode( spec ) {
 			'--scope',
 			'user',
 			'wp-docs-toolkit',
+			...Object.entries( spec.env || {} ).flatMap( ( [ k, v ] ) => [
+				'-e',
+				`${ k }=${ v }`,
+			] ),
 			'--',
 			spec.command,
 			...spec.args,
@@ -221,13 +247,14 @@ export function runInstall( options = {} ) {
 	log(
 		`Registered in Claude Desktop: ${ file }${ backup ? ` (backup: ${ path.basename( backup ) })` : '' }`
 	);
-	let codeLine = `Not found on this machine. Later: claude mcp add --scope user wp-docs-toolkit -- ${ spec.command } ${ spec.args.join( ' ' ) }`;
+	let codeLine = `Not found on this machine. Later: claude mcp add --scope user wp-docs-toolkit -e "PATH=${ spec.env.PATH }" -- ${ spec.command } ${ spec.args.join( ' ' ) }`;
 	if ( options.claudeCode !== false && registerClaudeCode( spec ) ) {
 		log( 'Registered in Claude Code (user scope)' );
 		codeLine = 'Already registered. Ask the same thing in any project.';
 	}
 	log( `
 Server launch: ${ spec.how }
+               PATH starts with that Node's folder, so the server runs there whatever Node the app finds by default.
 
 Next:
   Claude Desktop  Quit and reopen it. In a new chat the tools menu lists "wp-docs-toolkit". Try:

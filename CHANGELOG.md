@@ -2,6 +2,16 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
+## 0.3.5 (2026-10-16)
+
+- Fix: on a machine whose default Node is 26, screenshots failed with `Failed to load fs-ext native module` even after
+  `install` had registered Node 24. The registered launch goes through npx, and npx hands the package's bin to the
+  first `node` on PATH (its `#!/usr/bin/env node` shebang; npm prepends .bin folders, not the running Node's own).
+  In Claude Desktop that is Homebrew's Node 26, so the server, and Playground with it, ran there. `install` now
+  writes an `env.PATH` that starts with the chosen Node's folder (Claude Desktop and Claude Code), and the server
+  restarts itself on a supported Node when a launcher starts it on an unsupported one. Found on a colleague's
+  machine.
+
 ## 0.3.4 (2026-10-16)
 
 - Node 26 is refused with an explanation instead of crashing inside Playground (its native module ships binaries

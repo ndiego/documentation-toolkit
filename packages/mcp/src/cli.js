@@ -17,11 +17,17 @@
  * The first screenshot boots WordPress Playground and Chromium (10-20 s); later ones reuse them (a few seconds).
  */
 import http from 'node:http';
+import { spawn } from 'node:child_process';
 import { timingSafeEqual } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer, createWarmSession } from './server.js';
-import { unsupportedNodeMessage } from '@wp-docs-toolkit/screenshots';
+import {
+	unsupportedNodeMessage,
+	findSupportedNode,
+} from '@wp-docs-toolkit/screenshots';
+import { launchEnv } from './install.js';
 
 const args = process.argv.slice( 2 );
 const flag = ( name ) => {
@@ -49,9 +55,20 @@ if ( args[ 0 ] === 'uninstall' ) {
 	const { runUninstall } = await import( './install.js' );
 	process.exit( runUninstall( { config: flag( '--config' ) } ) );
 }
-// The server can start on any Node, but screenshots cannot: say so once, loudly, before a client connects.
+// The server can start on any Node, but screenshots cannot. A launcher may land us on an unsupported one even
+// when a supported one was registered (a desktop app's PATH puts Homebrew's newest Node first, and npx hands
+// this script to it): restart on a supported Node found on the machine, or say so once, loudly.
 const nodeProblem = unsupportedNodeMessage();
 if ( nodeProblem ) {
+	const better = process.env.WP_DOCS_MCP_NO_RELAUNCH
+		? null
+		: findSupportedNode();
+	if ( better?.switched ) {
+		console.error(
+			`wp-docs-mcp: Node ${ process.versions.node } cannot run WordPress Playground; restarting on Node ${ better.version } at ${ better.bin }.`
+		);
+		process.exit( await relaunch( better.bin ) );
+	}
 	console.error( `wp-docs-mcp: ${ nodeProblem }` );
 }
 const options = {
@@ -129,6 +146,35 @@ if ( args.includes( '--http' ) ) {
 	const transport = new StdioServerTransport();
 	transport.onclose = shutdown;
 	await server.connect( transport );
+}
+
+/**
+ * Run this same command line under another Node, sharing stdio (the MCP transport) and forwarding signals.
+ * @param {string} nodeBin
+ * @return {Promise<number>} the child's exit code
+ */
+function relaunch( nodeBin ) {
+	return new Promise( ( resolve ) => {
+		const child = spawn(
+			nodeBin,
+			[ fileURLToPath( import.meta.url ), ...args ],
+			{
+				stdio: 'inherit',
+				env: {
+					...process.env,
+					...launchEnv( nodeBin ),
+					WP_DOCS_MCP_NO_RELAUNCH: '1',
+				},
+			}
+		);
+		for ( const signal of [ 'SIGINT', 'SIGTERM' ] ) {
+			process.on( signal, () => child.kill( signal ) );
+		}
+		child.on( 'error', () => resolve( 1 ) );
+		child.on( 'exit', ( code, signal ) =>
+			resolve( code ?? ( signal ? 1 : 0 ) )
+		);
+	} );
 }
 
 /**

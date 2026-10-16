@@ -40,8 +40,11 @@ screenshot.
 npx -y @wp-docs-toolkit/mcp install
 ```
 
-Registers the server in Claude Desktop and, when the `claude` CLI exists, in Claude Code, writing absolute paths so
-the desktop app finds Node even when it comes from nvm, Homebrew or Volta. Restart Claude Desktop afterwards. The
+Registers the server in Claude Desktop and, when the `claude` CLI exists, in Claude Code, writing the absolute path
+of a supported Node and a PATH that starts with its folder, so the server runs on that Node whatever the desktop app
+finds by default (it does not see your shell's nvm setup, and Homebrew's newest Node usually comes first on its
+PATH). Should a launcher still start it on an unsupported Node, the server restarts itself on a supported one it
+finds on the machine. Restart Claude Desktop afterwards. The
 same command later updates to the newest version; `npx -y @wp-docs-toolkit/mcp uninstall` removes the entries.
 Flags: `--config <file>` for another Claude Desktop config, `--no-claude-code`.
 
@@ -61,7 +64,9 @@ Claude Desktop: add to `claude_desktop_config.json` (Settings → Developer → 
 ```
 
 If the server never appears, the app could not find `npx` on its PATH; put the absolute path to your Node binary in
-`command` and `.../lib/node_modules/npm/bin/npx-cli.js` as the first argument, which is what `install` writes.
+`command` and `.../lib/node_modules/npm/bin/npx-cli.js` as the first argument. If your default Node is 26, add
+`"env": { "PATH": "<that Node's bin folder>:/usr/bin:/bin" }` as well, or npx hands the server to the default Node.
+`install` writes all of this.
 
 Claude Code: `claude mcp add wp-docs-toolkit -- npx -y @wp-docs-toolkit/mcp`. A checkout of the toolkit repository
 also carries a `.mcp.json`, so opening it in Claude Code offers the server automatically.

@@ -212,7 +212,7 @@ export function toSpecAnnotation( a, defaultWithin = null ) {
 export function createServer( options = {} ) {
 	const server = new McpServer( {
 		name: 'wp-docs-toolkit',
-		version: '0.3.4',
+		version: '0.3.5',
 	} );
 	const maxWidth = options.maxWidth ?? 1400;
 	const warm = options.warm || createWarmSession( options );

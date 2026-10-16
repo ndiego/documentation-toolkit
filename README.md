@@ -29,8 +29,9 @@ Also in this repository: a [GitHub Action](actions/validate-manifest) for the va
 npx -y @wp-docs-toolkit/mcp install
 ```
 
-Needs Node 22.19 to 25 (WordPress Playground's native module has no Node 26 binaries yet; the installer picks a
-supported Node from nvm, Volta, fnm or Homebrew when the default one is newer). The first screenshot takes about a
+Needs Node 22.19 to 25 (WordPress Playground's native module has no Node 26 binaries yet; the installer registers a
+supported Node from nvm, Volta, fnm or Homebrew when the default one is newer, and the server restarts itself on one
+if it is started on Node 26 anyway). The first screenshot takes about a
 minute, while Chromium and a WordPress build download; later ones take a few seconds. Claude Code is registered by the same command. ChatGPT connects over HTTPS; the
 [mcp README](packages/mcp/README.md) covers that route.
 
@@ -46,7 +47,7 @@ npx -y -p @wp-docs-toolkit/screenshots wp-screenshots shoot --preset site-editor
 pixels, `lint` ties images to Markdown. The [screenshots README](packages/screenshots/README.md) has the spec
 format and the [example project](examples/block-editor-handbook) shows a working setup.
 
-**In CI.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.3.4` with `manifest` and `docs` inputs, so a
+**In CI.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.3.5` with `manifest` and `docs` inputs, so a
 manifest that would break an import cannot merge.
 
 ## Sample prompts

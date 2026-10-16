@@ -6,6 +6,7 @@ import path from 'node:path';
 import {
 	resolveBinary,
 	npxCliFor,
+	launchEnv,
 	chooseNode,
 	launchSpec,
 	registerDesktop,
@@ -21,6 +22,19 @@ describe( 'install', () => {
 		assert.ok( path.isAbsolute( spec.args[ 0 ] ) );
 		assert.ok(
 			spec.args[ 0 ].endsWith( path.join( 'mcp', 'src', 'cli.js' ) )
+		);
+		assert.equal(
+			spec.env.PATH.split( path.delimiter )[ 0 ],
+			path.dirname( process.execPath )
+		);
+	} );
+
+	it( 'puts the chosen Node first on the launch PATH, once', () => {
+		const d = path.delimiter;
+		const base = [ '/usr/bin', '/x/bin', '', '/bin' ].join( d );
+		assert.equal(
+			launchEnv( '/x/bin/node', base ).PATH,
+			[ '/x/bin', '/usr/bin', '/bin' ].join( d )
 		);
 	} );
 
@@ -59,6 +73,11 @@ describe( 'install', () => {
 		assert.equal(
 			data.mcpServers[ 'wp-docs-toolkit' ].command,
 			process.execPath
+		);
+		assert.ok(
+			data.mcpServers[ 'wp-docs-toolkit' ].env.PATH.startsWith(
+				path.dirname( process.execPath ) + path.delimiter
+			)
 		);
 		assert.ok(
 			fs.readdirSync( dir ).some( ( f ) => f.includes( '.bak-' ) )
