@@ -21,6 +21,10 @@ import {
 	shootPreset,
 	openSession,
 	ensureChromium,
+	sceneNames,
+	verbNames,
+	targetNames,
+	LOCATOR_KEYS,
 } from '@wp-docs-toolkit/screenshots';
 import { validateManifest } from '@wp-docs-toolkit/manifest';
 
@@ -219,8 +223,35 @@ export function createServer( options = {} ) {
 			inputSchema: {
 				preset: z
 					.enum( presetNames )
+					.optional()
 					.describe(
-						'The subject: block-canvas, block-toolbar, block-settings, site-editor, post-editor, admin-screen or front-end.'
+						'The subject: block-canvas, block-toolbar, block-settings, site-editor, post-editor, admin-screen or front-end. Start here; leave it out only for a shot that no preset covers, and then give scene and steps.'
+					),
+				scene: z
+					.string()
+					.optional()
+					.describe(
+						'Starting state when not using a preset, or to override one: new-post, new-page, post:<slug>, page:<slug>, admin:<path>, site-editor, site-editor:<view>, front, front:<path>.'
+					),
+				steps: z
+					.array(
+						z.union( [
+							z.string(),
+							z.record( z.string(), z.unknown() ),
+						] )
+					)
+					.optional()
+					.describe(
+						'Steps to run before capturing, after any preset steps: each a verb name or a single-key object, e.g. "openListView", { "searchInserter": "Gallery" }, { "click": { "button": "Replace" } }, { "openInspector": "styles" }, { "press": "Escape" }. Call `vocabulary` for the verbs and locator keys. Unknown verbs are rejected with a suggestion.'
+					),
+				viewport: z
+					.union( [
+						z.enum( [ 'desktop', 'narrow', 'mobile' ] ),
+						z.object( { width: z.number(), height: z.number() } ),
+					] )
+					.optional()
+					.describe(
+						'Viewport: desktop (1440×900, default), narrow (1024×768), mobile (390×844), or {width, height}.'
 					),
 				block: z
 					.string()
@@ -292,6 +323,18 @@ export function createServer( options = {} ) {
 					.describe(
 						'Padding around the crop in CSS pixels (preset default otherwise).'
 					),
+				fit: z
+					.enum( [ 'content' ] )
+					.optional()
+					.describe(
+						'content: clip a tall panel to its last visible child.'
+					),
+				mask: z
+					.array( z.record( z.string(), z.unknown() ) )
+					.optional()
+					.describe(
+						'Elements to cover with a neutral block (locator keys, e.g. { "selector": ".some-dynamic" }).'
+					),
 				alt: z
 					.string()
 					.optional()
@@ -326,6 +369,11 @@ export function createServer( options = {} ) {
 					params,
 					alt: args.alt,
 					frame: args.frame,
+					scene: args.scene,
+					steps: args.steps,
+					viewport: args.viewport,
+					fit: args.fit,
+					mask: args.mask,
 					target: args.target,
 					// admin-content is bordered by the menu and the admin bar; any padding drags them in.
 					pad:
@@ -348,7 +396,9 @@ export function createServer( options = {} ) {
 				.png()
 				.toBuffer();
 			const summary = {
-				preset: args.preset,
+				preset: args.preset || null,
+				scene: args.scene || null,
+				steps: ( args.steps || [] ).length,
 				params,
 				width: result.width,
 				height: result.height,
@@ -370,6 +420,24 @@ export function createServer( options = {} ) {
 				],
 			};
 		}
+	);
+
+	server.registerTool(
+		'vocabulary',
+		{
+			title: 'Screenshot vocabulary',
+			description:
+				'Everything a free-form screenshot can be built from: scenes (starting states), step verbs with their arguments, named capture targets, locator keys for naming elements, frames and arrow directions. Call it before writing `steps` for a subject no preset covers.',
+			inputSchema: {},
+		},
+		async () => ( {
+			content: [
+				{
+					type: 'text',
+					text: JSON.stringify( describeVocabulary(), null, 2 ),
+				},
+			],
+		} )
 	);
 
 	server.registerTool(
@@ -546,4 +614,56 @@ export function createWarmSession( options = {} ) {
 		return { config, session };
 	};
 	return { get, run, touch: armIdle, close };
+}
+
+const VERB_ARGS = {
+	insertBlock:
+		'block name, or { name, attributes, innerBlocks }; the new block becomes selected',
+	selectBlock: 'block name, or { name, nth }',
+	setContent: 'block HTML replacing the whole post content',
+	openInserter: 'none',
+	searchInserter: 'search term; opens the inserter and waits for results',
+	openInspector: 'content | settings | styles (default settings)',
+	openDocumentSidebar: 'none',
+	openPanel: 'panel name to expand, e.g. "Dimensions"',
+	openBlockMenu: 'none; the block toolbar Options menu',
+	openToolbarDropdown: 'toolbar button name, e.g. "Align"',
+	openListView: 'none',
+	openOptionsMenu: 'none; the editor top-right Options menu',
+	click: 'locator key, e.g. { button: "Replace" }',
+	hover: 'locator key',
+	type: 'text, or { text, pace: "human" }',
+	fill: '{ <locator key>, value }',
+	select: '{ <locator key>, option } for a native select',
+	press: 'key chord: Enter, Escape, primary+k',
+	wait: '{ for: <target or locator key>, state?: visible | hidden | attached } or milliseconds',
+	setViewport: 'desktop | narrow | mobile | { width, height }',
+	setPreference:
+		'{ scope, key, value } for core, core/edit-post, core/edit-site',
+	scrollTo: 'locator key',
+	evaluate: 'JavaScript source run in the page',
+};
+
+/**
+ * The vocabulary as plain data for the tool.
+ * @return {Object} scenes, verbs, targets, locator keys, frames, directions
+ */
+export function describeVocabulary() {
+	return {
+		scenes: {
+			names: sceneNames,
+			note: 'post:<slug>, page:<slug>, admin:<path>, site-editor:<view> (templates, parts, patterns, navigation, pages, styles, template:<theme>//<slug>, part:<theme>//<slug>), front:<path>.',
+		},
+		verbs: Object.fromEntries(
+			verbNames.map( ( v ) => [ v, VERB_ARGS[ v ] || '' ] )
+		),
+		targets: targetNames,
+		locatorKeys: {
+			keys: LOCATOR_KEYS,
+			note: 'One of button, link, tab, option, menuitem, control, placeholder, text, role (+ name), selector, block; modifiers exact (default true in steps), nth, within (a target), in (page | canvas).',
+		},
+		frames: FRAMES,
+		arrowDirections: DIRECTIONS,
+		annotationTypes: [ 'outline', 'arrow', 'badge', 'dim' ],
+	};
 }

@@ -5,6 +5,9 @@ All packages in this repository share one version. Consumers pin a tag.
 ## Unreleased
 
 - READMEs rewritten for npm readers: install from the registry first, the git checkout as the development path.
+- MCP: free-form screenshots. `screenshot` works without a preset given `scene` and `steps` in the engine's
+  vocabulary (validated like a YAML spec), and takes `viewport`, `fit` and `mask`; a `vocabulary` tool lists scenes,
+  verbs, targets, locator keys and frames so an agent can build a shot no preset covers.
 - MCP: the `screenshot` tool takes `target` to crop to a named region (`admin-content` for a wp-admin screen
   without the menu and toolbar, `inspector`, `block-toolbar`, …) instead of the preset's default.
 

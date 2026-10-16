@@ -8,7 +8,13 @@ asking in words.
 |---|---|
 | `list_presets` | The subjects a screenshot can be taken of, with their parameters. |
 | `screenshot` | Render one subject from a preset, optionally with annotations (`annotate`: an arrow or outline on a named button or control, numbered badges, dimming), extra regions in the crop (`include`) and `pad` (a block on the canvas, its toolbar or settings, the site editor, a wp-admin screen, the front end) against the bundled demo site (WordPress 7.1, the Ipsum theme, demo content). Returns the image inline and writes the WebP when given `out`. The first call boots WordPress and Chromium (10-20 s); later calls reuse them (a few seconds). |
+| `vocabulary` | Scenes, step verbs, capture targets, locator keys, frames: what a free-form screenshot can be built from. |
 | `restart_environment` | Stop the warm WordPress session so the next screenshot boots a fresh site. |
+
+Presets are the structured path and cover most requests. For anything else the `screenshot` tool takes `scene`
+and `steps` in the engine's own vocabulary (the same one YAML specs use), plus `viewport`, `target`, `fit` and `mask`,
+so an agent can build a shot no preset anticipated while every step is still validated. `vocabulary` lists what is
+available.
 
 Screenshot calls are serialized on the one warm session; concurrent requests wait their turn. If Chromium is missing on
 first use, the server downloads it (about 150 MB) before the first screenshot.
@@ -104,6 +110,8 @@ node packages/mcp/src/cli.js install --via path     # register this checkout ins
 - "Take a screenshot of the post editor with an arrow on the Save draft button."
 - "The Image block's Settings tab with the Resolution control outlined."
 - "Validate docs/manifest.json against the docs folder."
+- "Open the block inserter, search for Gallery, and screenshot the inserter panel." (no preset covers this; the
+  agent writes `steps` from the `vocabulary` tool)
 
 ## Tests
 

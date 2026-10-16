@@ -77,8 +77,8 @@ export function freePort( host = '127.0.0.1' ) {
  * @return {Promise<{file: string|null, buffer: Buffer, width: number, height: number, encoding: string, frame: string, alt: string}>} the image
  */
 export async function shootPreset( config, options ) {
-	const name = options.preset;
-	if ( ! name || ! presetNames.includes( name ) ) {
+	const name = options.preset || null;
+	if ( name && ! presetNames.includes( name ) ) {
 		throw Object.assign(
 			new Error(
 				`unknown preset "${ name }". Known presets: ${ presetNames.join( ', ' ) }`
@@ -86,16 +86,24 @@ export async function shootPreset( config, options ) {
 			{ name: 'UserError' }
 		);
 	}
+	if ( ! name && ! options.scene && ! options.steps?.length ) {
+		throw Object.assign(
+			new Error(
+				`give a preset (${ presetNames.join( ', ' ) }) or a scene and steps`
+			),
+			{ name: 'UserError' }
+		);
+	}
 	await ensureChromium();
 	const params = {};
-	for ( const param of Object.keys( presets[ name ].params ) ) {
+	for ( const param of Object.keys( name ? presets[ name ].params : {} ) ) {
 		const value = options.params?.[ param ];
 		if ( value !== undefined && value !== null && value !== '' ) {
 			params[ param ] = String( value );
 		}
 	}
-	const id = String( options.id || name );
-	const alt = String( options.alt || `${ name } screenshot` );
+	const id = String( options.id || name || 'shot' );
+	const alt = String( options.alt || `${ name || 'WordPress' } screenshot` );
 	const tmp = fs.mkdtempSync(
 		path.join( os.tmpdir(), 'wp-screenshots-shoot-' )
 	);
@@ -114,7 +122,16 @@ export async function shootPreset( config, options ) {
 			docsDir: null,
 			docsManifest: null,
 		};
-		const spec = loadSpec( specFile, { ...adhoc, specsBase: tmp } );
+		let spec;
+		try {
+			spec = loadSpec( specFile, { ...adhoc, specsBase: tmp } );
+		} catch ( e ) {
+			// The temp spec's path means nothing to the caller; keep the message about the shot itself.
+			throw Object.assign(
+				new Error( e.message.replace( /^.*?shoot\.yaml: /, '' ) ),
+				{ name: 'UserError' }
+			);
+		}
 		const { summary, results } = await runShots( adhoc, {
 			specs: [ spec ],
 			mode: 'run',
@@ -170,15 +187,21 @@ async function portFor( config, options ) {
 
 /**
  * The one-shot spec document `shoot` renders, as plain data (serialised to YAML and validated by loadSpec).
- * @param {string} preset
- * @param {Object} params
- * @param {string} id
- * @param {string} alt
- * @param {Object} options frame, annotate, include, pad
+ * @param {string|null} preset  a preset name, or null for a shot described by scene and steps
+ * @param {Object}      params
+ * @param {string}      id
+ * @param {string}      alt
+ * @param {Object}      options frame, annotate, include, pad
  * @return {Object} spec data
  */
 export function buildAdhocSpec( preset, params, id, alt, options = {} ) {
 	const capture = {};
+	if ( options.fit ) {
+		capture.fit = String( options.fit );
+	}
+	if ( options.mask?.length ) {
+		capture.mask = options.mask;
+	}
 	if ( options.target ) {
 		capture.target = String( options.target );
 	}
@@ -194,7 +217,20 @@ export function buildAdhocSpec( preset, params, id, alt, options = {} ) {
 	if ( options.pad !== undefined && options.pad !== null ) {
 		capture.pad = Number( options.pad );
 	}
-	const shot = { id, preset, alt, ...params };
+	const shot = { id, alt };
+	if ( preset ) {
+		shot.preset = preset;
+		Object.assign( shot, params );
+	}
+	if ( options.scene ) {
+		shot.scene = String( options.scene );
+	}
+	if ( options.viewport ) {
+		shot.viewport = options.viewport;
+	}
+	if ( options.steps?.length ) {
+		shot.steps = options.steps;
+	}
 	if ( Object.keys( capture ).length ) {
 		shot.capture = capture;
 	}

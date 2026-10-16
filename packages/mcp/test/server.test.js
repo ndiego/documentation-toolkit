@@ -28,16 +28,17 @@ after( async () => {
 } );
 
 describe( 'wp-docs-toolkit MCP server', () => {
-	it( 'exposes the four tools', async () => {
+	it( 'exposes the five tools', async () => {
 		const { tools } = await client.listTools();
 		assert.deepEqual( tools.map( ( t ) => t.name ).sort(), [
 			'list_presets',
 			'restart_environment',
 			'screenshot',
 			'validate_manifest',
+			'vocabulary',
 		] );
 		const shot = tools.find( ( t ) => t.name === 'screenshot' );
-		assert.deepEqual( shot.inputSchema.required, [ 'preset' ] );
+		assert.equal( shot.inputSchema.required, undefined );
 		assert.ok(
 			shot.inputSchema.properties.preset.enum.includes( 'site-editor' )
 		);
@@ -172,6 +173,31 @@ describe( 'annotations', () => {
 				'block-toolbar'
 			),
 			{ dim: { target: 'inspector' } }
+		);
+	} );
+
+	it( 'vocabulary lists scenes, verbs, targets and locator keys', async () => {
+		const result = await client.callTool( {
+			name: 'vocabulary',
+			arguments: {},
+		} );
+		const v = JSON.parse( result.content[ 0 ].text );
+		assert.ok( v.scenes.names.includes( 'site-editor' ) );
+		assert.ok( Object.keys( v.verbs ).includes( 'searchInserter' ) );
+		assert.ok( v.targets.includes( 'inserter' ) );
+		assert.ok( v.locatorKeys.keys.includes( 'button' ) );
+		assert.ok( v.frames.includes( 'portrait' ) );
+	} );
+
+	it( 'screenshot without a preset needs a scene or steps', async () => {
+		const result = await client.callTool( {
+			name: 'screenshot',
+			arguments: { alt: 'x' },
+		} );
+		assert.equal( result.isError, true );
+		assert.match(
+			result.content[ 0 ].text,
+			/preset .* or a scene and steps/
 		);
 	} );
 } );

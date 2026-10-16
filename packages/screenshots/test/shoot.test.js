@@ -73,4 +73,32 @@ describe( 'buildAdhocSpec', () => {
 		assert.ok( fs.existsSync( cli ), cli );
 		assert.match( cli, /cli\.js$/ );
 	} );
+
+	it( 'builds a free-form shot from scene and steps without a preset', () => {
+		const data = buildAdhocSpec( null, {}, 'inserter', 'The inserter', {
+			scene: 'new-post',
+			steps: [ { searchInserter: 'Gallery' } ],
+			target: 'inserter',
+			frame: 'portrait',
+			viewport: 'narrow',
+		} );
+		const dir = fs.mkdtempSync(
+			path.join( os.tmpdir(), 'wp-screenshots-adhoc-' )
+		);
+		const file = path.join( dir, 'shoot.yaml' );
+		fs.writeFileSync( file, YAML.stringify( data ) );
+		const [ shot ] = loadSpec( file, {
+			style: mergeStyle(),
+			specsBase: dir,
+		} ).shots;
+		assert.equal( shot.preset, null );
+		assert.equal( shot.scene, 'new-post' );
+		assert.equal( shot.viewport, 'narrow' );
+		assert.deepEqual(
+			shot.steps.map( ( s ) => s.verb ),
+			[ 'searchInserter' ]
+		);
+		assert.equal( shot.capture.target, 'inserter' );
+		fs.rmSync( dir, { recursive: true, force: true } );
+	} );
 } );

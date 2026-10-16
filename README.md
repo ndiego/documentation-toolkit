@@ -59,13 +59,15 @@ With the MCP server installed, these work as written in Claude Desktop, Claude C
 - *The Image block's toolbar, with numbered badges on Replace and Options.*
 - *Give me the site editor's Styles view and save it to ~/Desktop/styles.webp.*
 - *A screenshot of the Plugins screen, cropped to the content area, not the whole admin.*
+- *Open the block inserter, search for Gallery, and screenshot the inserter panel.*
 - *What screenshot presets are there?*
 - *Validate docs/manifest.json against the docs folder.*
 
 Subjects are presets: a block on the canvas, its toolbar or settings tab, the site editor and its views, the post
 editor, any wp-admin screen, the front end. Highlights are anchored to named controls, so "outline the Resolution
 control" finds the control by its label. Blocks with showcase content are Image, Gallery and Table; for others, ask
-for the block "in a new post".
+for the block "in a new post". Anything a preset does not cover, the agent builds from the engine's step
+vocabulary (open the inserter, click a button, type, press a key), validated the same way as a written spec.
 
 ## Skills for Claude Code
 
