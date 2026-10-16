@@ -136,6 +136,16 @@ const handlers = {
 	},
 };
 
+// The site editor's list views, by the name a scene uses: site-editor:<view>.
+const SITE_EDITOR_VIEWS = {
+	templates: { p: '/template' },
+	parts: { p: '/pattern', extra: { postType: 'wp_template_part' } },
+	patterns: { p: '/pattern' },
+	navigation: { p: '/navigation' },
+	pages: { p: '/page' },
+	styles: { p: '/styles' },
+};
+
 /**
  * Map a scene route to the site editor's `p` route (the `site-editor.php?p=/...` scheme of WordPress 6.8+).
  * @param {string} route
@@ -145,19 +155,11 @@ function siteEditorRoute( route ) {
 	if ( ! route || route === 'home' ) {
 		return { p: '/' };
 	}
-	switch ( route.split( ':' )[ 0 ] ) {
-		case 'templates':
-			return { p: '/template' };
-		case 'parts':
-			return { p: '/pattern', extra: { postType: 'wp_template_part' } };
-		case 'patterns':
-			return { p: '/pattern' };
-		case 'navigation':
-			return { p: '/navigation' };
-		case 'pages':
-			return { p: '/page' };
-		case 'styles':
-			return { p: '/styles' };
+	const view = route.split( ':' )[ 0 ];
+	if ( SITE_EDITOR_VIEWS[ view ] ) {
+		return SITE_EDITOR_VIEWS[ view ];
+	}
+	switch ( view ) {
 		case 'template':
 			return {
 				p: `/wp_template/${ routeValue( route ) }`,
@@ -211,6 +213,42 @@ async function trackCurrentPost( ctx, type ) {
 }
 
 export const sceneNames = Object.keys( handlers );
+
+/**
+ * What each scene is and the form its argument takes, for tools that explain the vocabulary. Keyed like
+ * `handlers` (a test keeps the two in step).
+ */
+export const sceneDocs = {
+	'new-post': {
+		form: 'new-post',
+		description: 'A fresh, empty post in the editor, guides dismissed.',
+	},
+	'new-page': {
+		form: 'new-page',
+		description: 'A fresh, empty page in the editor, guides dismissed.',
+	},
+	post: {
+		form: 'post:<slug>',
+		description: 'An existing post from the demo site, open in the editor.',
+	},
+	page: {
+		form: 'page:<slug>',
+		description: 'An existing page from the demo site, open in the editor.',
+	},
+	admin: {
+		form: 'admin:<path>',
+		description:
+			'A wp-admin screen, e.g. admin:plugins.php or admin:options-general.php?tab=x.',
+	},
+	'site-editor': {
+		form: 'site-editor or site-editor:<view>',
+		description: `The site editor on its home or a view: ${ Object.keys( SITE_EDITOR_VIEWS ).join( ', ' ) }, template:<theme>//<slug>, part:<theme>//<slug>.`,
+	},
+	front: {
+		form: 'front or front:<path>',
+		description: 'The public site, e.g. front:/about/.',
+	},
+};
 
 /**
  * The part of a `kind:value` site editor route after the colon.

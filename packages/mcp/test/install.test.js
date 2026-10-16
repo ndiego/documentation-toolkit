@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+	resolveBinary,
 	npxCliFor,
 	chooseNode,
 	launchSpec,
@@ -117,5 +118,12 @@ describe( 'install', () => {
 		assert.equal( choice.bin, process.execPath );
 		const spec = launchSpec( 'npx', choice.bin );
 		assert.equal( spec.command, process.execPath );
+	} );
+
+	it( 'resolves a --node value to an absolute existing path or null', () => {
+		assert.equal( resolveBinary( process.execPath ), process.execPath );
+		assert.equal( resolveBinary( '/nowhere/node' ), null );
+		const byName = resolveBinary( 'node' );
+		assert.ok( byName === null || path.isAbsolute( byName ) );
 	} );
 } );

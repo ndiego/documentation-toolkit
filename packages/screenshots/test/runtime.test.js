@@ -1,11 +1,41 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
 import {
 	isSupportedNode,
 	unsupportedNodeMessage,
 	findSupportedNode,
 	ensureSupportedNode,
+	NODE_MAX_MAJOR,
 } from '../src/runtime.js';
+
+describe( 'node ceiling', () => {
+	it( 'matches the newest Node major Playground ships a native binary for', ( t ) => {
+		// The constant is a copy of a fact in a dependency; this keeps the copy from going stale silently.
+		let dir;
+		try {
+			dir = path.join(
+				path.dirname(
+					createRequire( import.meta.url ).resolve(
+						'fs-ext-extra-prebuilt/package.json'
+					)
+				),
+				'binaries'
+			);
+		} catch {
+			t.skip( 'fs-ext-extra-prebuilt is not installed here' );
+			return;
+		}
+		const majors = fs
+			.readdirSync( dir )
+			.map( ( f ) => f.match( /-node-(\d+)\.\d+\.\d+\.node$/ ) )
+			.filter( Boolean )
+			.map( ( m ) => Number( m[ 1 ] ) );
+		assert.equal( Math.max( ...majors ), NODE_MAX_MAJOR );
+	} );
+} );
 
 describe( 'node support', () => {
 	it( 'accepts 22.19 through 25 and rejects older and 26+', () => {

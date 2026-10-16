@@ -8,8 +8,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-const require = createRequire( import.meta.url );
+import { execFileSync } from 'node:child_process';
 
 export const NODE_MIN = [ 22, 19 ];
 export const NODE_MAX_MAJOR = 25;
@@ -20,17 +19,11 @@ export const NODE_MAX_MAJOR = 25;
  * @return {boolean} supported
  */
 export function isSupportedNode( version ) {
-	const [ major, minor ] = String( version )
-		.replace( /^v/, '' )
-		.split( '.' )
-		.map( Number );
-	if (
-		major < NODE_MIN[ 0 ] ||
-		( major === NODE_MIN[ 0 ] && minor < NODE_MIN[ 1 ] )
-	) {
-		return false;
-	}
-	return major <= NODE_MAX_MAJOR;
+	const v = String( version ).replace( /^v/, '' );
+	return (
+		compareVersions( v, NODE_MIN.join( '.' ) ) >= 0 &&
+		Number( v.split( '.' )[ 0 ] ) <= NODE_MAX_MAJOR
+	);
 }
 
 /**
@@ -79,15 +72,23 @@ export function candidateNodeBinaries( home = os.homedir() ) {
 		'/usr/local/bin/node',
 		'/usr/bin/node',
 	];
-	const found = new Set();
+	// Keep the path as found (Homebrew's opt/ symlink survives upgrades; the Cellar path behind it does not),
+	// deduplicating by what it resolves to.
+	const seen = new Set();
+	const found = [];
 	for ( const pattern of globs ) {
 		for ( const file of fs.globSync( pattern ) ) {
-			if ( fs.existsSync( file ) ) {
-				found.add( fs.realpathSync( file ) );
+			if ( ! fs.existsSync( file ) ) {
+				continue; // a dangling symlink (an uninstalled Homebrew keg)
+			}
+			const real = fs.realpathSync( file );
+			if ( ! seen.has( real ) ) {
+				seen.add( real );
+				found.push( file );
 			}
 		}
 	}
-	return [ ...found ];
+	return found;
 }
 
 /**
@@ -97,7 +98,6 @@ export function candidateNodeBinaries( home = os.homedir() ) {
  */
 export function nodeVersionOf( bin ) {
 	try {
-		const { execFileSync } = require( 'node:child_process' );
 		return execFileSync( bin, [ '-p', 'process.versions.node' ], {
 			encoding: 'utf8',
 			timeout: 5000,

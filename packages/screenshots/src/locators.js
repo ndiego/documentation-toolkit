@@ -19,7 +19,7 @@
  */
 import { resolveTarget } from './targets.js';
 
-const NAME_KEYS = [
+export const NAME_KEYS = [
 	'button',
 	'link',
 	'tab',
@@ -29,8 +29,8 @@ const NAME_KEYS = [
 	'placeholder',
 	'text',
 ];
-const OTHER_KEYS = [ 'role', 'name', 'selector', 'block' ];
-const MODIFIER_KEYS = [ 'exact', 'nth', 'within', 'in' ];
+export const OTHER_KEYS = [ 'role', 'name', 'selector', 'block' ];
+export const MODIFIER_KEYS = [ 'exact', 'nth', 'within', 'in' ];
 export const LOCATOR_KEYS = [ ...NAME_KEYS, ...OTHER_KEYS, ...MODIFIER_KEYS ];
 
 export function describeKey( key ) {

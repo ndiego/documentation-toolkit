@@ -5,6 +5,8 @@
  *
  * Each preset declares its parameters (validated at spec load) and an `expand( params )` returning the shot
  * fields it fills in. Anything the shot sets explicitly wins over the preset; shot steps run after preset steps.
+ * A tight preset may name an `annotationScope`: the region its annotations look in when they do not say
+ * ("Options" exists in the block toolbar and in the top bar).
  */
 
 const BLOCK_PARAM = {
@@ -37,6 +39,7 @@ export const presets = {
 	'block-toolbar': {
 		description: 'The toolbar of a selected block.',
 		params: { block: BLOCK_PARAM, post: POST_PARAM },
+		annotationScope: 'block-toolbar',
 		expand: ( { block, post } ) => ( {
 			scene: sceneFor( block, post ),
 			steps: stepsFor( block, post ),
@@ -47,6 +50,7 @@ export const presets = {
 	'block-settings': {
 		description:
 			'The block inspector (sidebar) for a selected block, on one of its tabs, optionally with a panel expanded.',
+		annotationScope: 'inspector',
 		params: {
 			block: BLOCK_PARAM,
 			post: POST_PARAM,

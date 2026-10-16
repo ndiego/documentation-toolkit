@@ -18,68 +18,98 @@ import {
 	loadConfig,
 	presets,
 	presetNames,
-	shootPreset,
+	prepareShot,
+	renderShot,
 	openSession,
 	ensureChromium,
 	ensureSupportedNode,
 	sceneNames,
-	verbNames,
+	sceneDocs,
+	verbDocs,
 	targetNames,
+	defaultStyle,
 	LOCATOR_KEYS,
+	NAME_KEYS,
+	OTHER_KEYS,
+	MODIFIER_KEYS,
+	ANNOTATION_TYPES,
+	DIRECTIONS,
+	BADGE_POSITIONS,
+	captureFrameNames,
 } from '@wp-docs-toolkit/screenshots';
 import { validateManifest } from '@wp-docs-toolkit/manifest';
 
-const FRAMES = [
-	'auto',
-	'wide',
-	'standard',
-	'portrait',
-	'banner',
-	'none',
-	'card',
-];
+// The engine's vocabulary, as the tool descriptions state it. Nothing here is typed out twice: the names, the
+// frames and their ratios, the viewports and their sizes all come from the engine.
+const FRAMES = captureFrameNames();
+const FRAME_HINT = FRAMES.map( ( name ) =>
+	defaultStyle.frames[ name ]
+		? `${ name } (${ ratioLabel( defaultStyle.frames[ name ] ) })`
+		: name
+).join( ', ' );
+const TARGET_HINT = `${ targetNames.join( ', ' ) }, or a CSS selector`;
+const VIEWPORT_NAMES = Object.keys( defaultStyle.viewports );
+const VIEWPORT_HINT = VIEWPORT_NAMES.map( ( name ) => {
+	const { width, height } = defaultStyle.viewports[ name ];
+	return `${ name } (${ width }×${ height }${ name === 'desktop' ? ', default' : '' })`;
+} ).join( ', ' );
+const SCENE_HINT = Object.values( sceneDocs )
+	.map( ( d ) => d.form )
+	.join( ', ' );
+// The keys that anchor an annotation to something: any locator key, or a named region.
+const ANCHOR_KEYS = [ ...NAME_KEYS, ...OTHER_KEYS, 'target' ];
 
-const DIRECTIONS = [
-	'top',
-	'bottom',
-	'left',
-	'right',
-	'top-left',
-	'top-right',
-	'bottom-left',
-	'bottom-right',
-];
-const TARGET_NAMES = [
-	'editor',
-	'canvas',
-	'selected-block',
-	'block-toolbar',
-	'inspector',
-	'document-sidebar',
-	'inserter',
-	'list-view',
-	'top-bar',
-	'options-menu',
-	'popover',
-	'modal',
-	'site-editor-sidebar',
-	'site-editor-canvas',
-	'admin-content',
-	'admin-screen',
-	'admin-menu',
-	'front',
-];
+/**
+ * A ratio as documentation writes it: 16/9 as "16:9".
+ * @param {number} ratio width / height
+ * @return {string} label
+ */
+function ratioLabel( ratio ) {
+	for ( let d = 1; d <= 16; d++ ) {
+		const n = ratio * d;
+		if ( Math.abs( n - Math.round( n ) ) < 1e-6 ) {
+			return `${ Math.round( n ) }:${ d }`;
+		}
+	}
+	return `${ ratio.toFixed( 2 ) }:1`;
+}
 
-// Where a preset's annotations look for their element unless told otherwise.
-const ANNOTATION_SCOPE = {
-	'block-toolbar': 'block-toolbar',
-	'block-settings': 'inspector',
-};
+/**
+ * One zod field per preset parameter, described from the presets that take it, so `screenshot` and
+ * `list_presets` draw on the same definitions.
+ * @return {Object<string, import('zod').ZodTypeAny>} fields keyed by parameter name
+ */
+function presetParamFields() {
+	const names = [
+		...new Set(
+			presetNames.flatMap( ( n ) => Object.keys( presets[ n ].params ) )
+		),
+	];
+	return Object.fromEntries(
+		names.map( ( key ) => {
+			const takers = presetNames.filter(
+				( n ) => presets[ n ].params[ key ]
+			);
+			const byText = new Map();
+			for ( const n of takers ) {
+				const text = presets[ n ].params[ key ].description;
+				byText.set( text, [ ...( byText.get( text ) || [] ), n ] );
+			}
+			const description = [ ...byText ]
+				.map( ( [ text, ps ] ) => `${ ps.join( ', ' ) }: ${ text }` )
+				.join( ' ' );
+			const options = presets[ takers[ 0 ] ].params[ key ].options;
+			const field = options ? z.enum( options ) : z.string();
+			return [ key, field.optional().describe( description ) ];
+		} )
+	);
+}
+const PRESET_PARAM_FIELDS = presetParamFields();
 
 // One annotation as a client states it: what to draw, and which element (by its accessible name) to anchor to.
 const annotationSchema = z.object( {
 	type: z
-		.enum( [ 'outline', 'arrow', 'badge', 'dim' ] )
+		.enum( ANNOTATION_TYPES )
 		.describe(
 			'outline (default choice), arrow (small or ambiguous targets), badge (numbered steps), dim (fade everything else).'
 		),
@@ -104,10 +134,10 @@ const annotationSchema = z.object( {
 		.optional()
 		.describe( 'CSS selector, when nothing else fits.' ),
 	target: z
-		.enum( TARGET_NAMES )
+		.string()
 		.optional()
 		.describe(
-			'A named region instead of an element (for dim, or to outline a whole panel).'
+			`A named region instead of an element (for dim, or to outline a whole panel): ${ TARGET_HINT }.`
 		),
 	exact: z
 		.boolean()
@@ -116,7 +146,7 @@ const annotationSchema = z.object( {
 			'Match the whole accessible name, case-sensitively. Default false here: a substring, case-insensitive, so "Save Draft" finds "Save draft".'
 		),
 	within: z
-		.enum( TARGET_NAMES )
+		.string()
 		.optional()
 		.describe(
 			'Limit the search to a named region, e.g. block-toolbar or top-bar.'
@@ -134,7 +164,7 @@ const annotationSchema = z.object( {
 			'Badge only: the number or letter to show (default: counts up).'
 		),
 	position: z
-		.enum( [ 'top-left', 'top-right', 'bottom-left', 'bottom-right' ] )
+		.enum( BADGE_POSITIONS )
 		.optional()
 		.describe( 'Badge only: which corner of the element.' ),
 } );
@@ -161,16 +191,7 @@ export function toSpecAnnotation( a, defaultWithin = null ) {
 			value[ key ] = v;
 		}
 	}
-	const hasAnchor = [
-		'button',
-		'control',
-		'menuitem',
-		'tab',
-		'link',
-		'text',
-		'selector',
-		'target',
-	].some( ( k ) => value[ k ] !== undefined );
+	const hasAnchor = ANCHOR_KEYS.some( ( k ) => value[ k ] !== undefined );
 	if ( ! hasAnchor ) {
 		return { [ type ]: 'self' };
 	}
@@ -232,7 +253,7 @@ export function createServer( options = {} ) {
 					.string()
 					.optional()
 					.describe(
-						'Starting state when not using a preset, or to override one: new-post, new-page, post:<slug>, page:<slug>, admin:<path>, site-editor, site-editor:<view>, front, front:<path>.'
+						`Starting state when not using a preset (a preset chooses its own; the two cannot be combined): ${ SCENE_HINT }. \`vocabulary\` explains each.`
 					),
 				steps: z
 					.array(
@@ -247,58 +268,19 @@ export function createServer( options = {} ) {
 					),
 				viewport: z
 					.union( [
-						z.enum( [ 'desktop', 'narrow', 'mobile' ] ),
+						z.enum( VIEWPORT_NAMES ),
 						z.object( { width: z.number(), height: z.number() } ),
 					] )
 					.optional()
 					.describe(
-						'Viewport: desktop (1440×900, default), narrow (1024×768), mobile (390×844), or {width, height}.'
+						`Viewport: ${ VIEWPORT_HINT }, or {width, height}.`
 					),
-				block: z
-					.string()
-					.optional()
-					.describe(
-						'Block name for the block-* presets, for example core/image.'
-					),
-				post: z
-					.string()
-					.optional()
-					.describe(
-						'Post slug to open for block-* and post-editor presets; "new" inserts the block into a fresh post.'
-					),
-				tab: z
-					.enum( [ 'content', 'settings', 'styles' ] )
-					.optional()
-					.describe( 'Inspector tab for block-settings.' ),
-				panel: z
-					.string()
-					.optional()
-					.describe(
-						'A collapsed inspector panel to expand for block-settings, for example "Dimensions".'
-					),
-				view: z
-					.string()
-					.optional()
-					.describe(
-						'Site editor view for site-editor: templates, parts, patterns, navigation, pages, styles, template:<theme>//<slug>.'
-					),
-				screen: z
-					.string()
-					.optional()
-					.describe(
-						'wp-admin path for admin-screen, for example options-general.php or plugins.php.'
-					),
-				path: z
-					.string()
-					.optional()
-					.describe(
-						'Front-end path for front-end, for example /about/.'
-					),
+				...PRESET_PARAM_FIELDS,
 				frame: z
 					.enum( FRAMES )
 					.optional()
 					.describe(
-						'Override the frame: auto, wide (16:9), standard (4:3), portrait (3:4), banner (3:1), none, card.'
+						`Override the frame: ${ FRAME_HINT }. auto picks the ratio nearest the content; plain is the raw capture with no stage.`
 					),
 				annotate: z
 					.array( annotationSchema )
@@ -307,13 +289,13 @@ export function createServer( options = {} ) {
 						'Highlights drawn on the screenshot, anchored to UI elements so they stay correct. One type per image is the house style. Example: [ { "type": "arrow", "button": "Save draft", "from": "bottom" } ].'
 					),
 				target: z
-					.enum( TARGET_NAMES )
+					.string()
 					.optional()
 					.describe(
-						'Crop to this named region instead of the preset default, e.g. admin-content for a wp-admin screen without the menu and toolbar, or inspector, block-toolbar, top-bar.'
+						`Crop to this region instead of the preset default, e.g. admin-content for a wp-admin screen without the menu and toolbar. One of: ${ TARGET_HINT }.`
 					),
 				include: z
-					.array( z.enum( TARGET_NAMES ) )
+					.array( z.string() )
 					.optional()
 					.describe(
 						'Extra named regions to keep inside the crop, e.g. [ "block-toolbar" ].'
@@ -350,48 +332,47 @@ export function createServer( options = {} ) {
 		},
 		async ( args ) => {
 			const params = {};
-			for ( const key of [
-				'block',
-				'post',
-				'tab',
-				'panel',
-				'view',
-				'screen',
-				'path',
-			] ) {
+			for ( const key of Object.keys( PRESET_PARAM_FIELDS ) ) {
 				if ( args[ key ] !== undefined ) {
 					params[ key ] = args[ key ];
 				}
 			}
+			// Validate first, without booting: a bad preset, verb or locator fails in milliseconds.
+			const config = await warm.config();
+			const prepared = prepareShot( config, {
+				preset: args.preset,
+				params,
+				alt: args.alt,
+				frame: args.frame,
+				scene: args.scene,
+				steps: args.steps,
+				viewport: args.viewport,
+				fit: args.fit,
+				mask: args.mask,
+				target: args.target,
+				pad: args.pad,
+				annotate: ( args.annotate || [] ).map( ( a ) =>
+					toSpecAnnotation(
+						a,
+						presets[ args.preset ]?.annotationScope ?? null
+					)
+				),
+				include: args.include,
+			} );
 			// One WordPress session, one screenshot at a time: concurrent calls queue behind each other.
-			const result = await warm.run( ( { config, session } ) =>
-				shootPreset( config, {
-					preset: args.preset,
-					params,
-					alt: args.alt,
-					frame: args.frame,
-					scene: args.scene,
-					steps: args.steps,
-					viewport: args.viewport,
-					fit: args.fit,
-					mask: args.mask,
-					target: args.target,
-					// admin-content is bordered by the menu and the admin bar; any padding drags them in.
-					pad:
-						args.pad ??
-						( args.target === 'admin-content' ? 0 : undefined ),
-					annotate: ( args.annotate || [] ).map( ( a ) =>
-						toSpecAnnotation(
-							a,
-							ANNOTATION_SCOPE[ args.preset ] || null
-						)
-					),
-					include: args.include,
-					out: args.out,
-					session,
-					log: () => {},
-				} )
-			);
+			const result = await warm
+				.run( ( { session } ) =>
+					renderShot( config, prepared, {
+						out: args.out,
+						session,
+						log: () => {},
+					} )
+				)
+				.catch( ( e ) => {
+					// A boot failure means renderShot never ran, so nothing has cleaned up the prepared shot.
+					prepared.discard();
+					throw e;
+				} );
 			const png = await sharp( result.buffer )
 				.resize( { width: maxWidth, withoutEnlargement: true } )
 				.png()
@@ -552,7 +533,7 @@ export function describePresets() {
  * @param {Object} [options]
  * @param {string} [options.project] path to a shots.config.js
  * @param {number} [options.idleMs]  idle timeout; 0 disables it
- * @return {{get: () => Promise<{config: Object, session: Object}>, run: (fn: ( env: Object ) => Promise<Object>) => Promise<Object>, touch: () => void, close: () => Promise<void>}} the holder
+ * @return {{get: () => Promise<{config: Object, session: Object}>, config: () => Promise<Object>, run: (fn: ( env: Object ) => Promise<Object>) => Promise<Object>, touch: () => void, close: () => Promise<void>}} the holder
  */
 export function createWarmSession( options = {} ) {
 	const idleMs = options.idleMs ?? 10 * 60 * 1000;
@@ -592,59 +573,40 @@ export function createWarmSession( options = {} ) {
 		queue = job.catch( () => {} ).then( armIdle );
 		return job;
 	};
-	const get = async () => {
+	/** The config without booting anything; loaded once, concurrent callers share the load. */
+	const getConfig = () => {
 		if ( ! config ) {
-			config = await loadConfig( options.project, {
+			config = loadConfig( options.project, {
 				fallback: ! options.project,
+			} ).catch( ( e ) => {
+				config = null;
+				throw e;
 			} );
 		}
+		return config;
+	};
+	const get = async () => {
+		const loaded = await getConfig();
 		if ( ! session ) {
 			ensureSupportedNode();
 			await ensureChromium( { install: true } );
 			if ( ! opening ) {
-				opening = openSession( { config, log: () => {} } ).finally(
-					() => {
-						opening = null;
-					}
-				);
+				opening = openSession( {
+					config: loaded,
+					log: () => {},
+				} ).finally( () => {
+					opening = null;
+				} );
 			}
 			session = await opening;
 		} else {
 			await session.ensure();
 		}
 		armIdle();
-		return { config, session };
+		return { config: loaded, session };
 	};
-	return { get, run, touch: armIdle, close };
+	return { get, config: getConfig, run, touch: armIdle, close };
 }
-
-const VERB_ARGS = {
-	insertBlock:
-		'block name, or { name, attributes, innerBlocks }; the new block becomes selected',
-	selectBlock: 'block name, or { name, nth }',
-	setContent: 'block HTML replacing the whole post content',
-	openInserter: 'none',
-	searchInserter: 'search term; opens the inserter and waits for results',
-	openInspector: 'content | settings | styles (default settings)',
-	openDocumentSidebar: 'none',
-	openPanel: 'panel name to expand, e.g. "Dimensions"',
-	openBlockMenu: 'none; the block toolbar Options menu',
-	openToolbarDropdown: 'toolbar button name, e.g. "Align"',
-	openListView: 'none',
-	openOptionsMenu: 'none; the editor top-right Options menu',
-	click: 'locator key, e.g. { button: "Replace" }',
-	hover: 'locator key',
-	type: 'text, or { text, pace: "human" }',
-	fill: '{ <locator key>, value }',
-	select: '{ <locator key>, option } for a native select',
-	press: 'key chord: Enter, Escape, primary+k',
-	wait: '{ for: <target or locator key>, state?: visible | hidden | attached } or milliseconds',
-	setViewport: 'desktop | narrow | mobile | { width, height }',
-	setPreference:
-		'{ scope, key, value } for core, core/edit-post, core/edit-site',
-	scrollTo: 'locator key',
-	evaluate: 'JavaScript source run in the page',
-};
 
 /**
  * The vocabulary as plain data for the tool.
@@ -654,18 +616,22 @@ export function describeVocabulary() {
 	return {
 		scenes: {
 			names: sceneNames,
-			note: 'post:<slug>, page:<slug>, admin:<path>, site-editor:<view> (templates, parts, patterns, navigation, pages, styles, template:<theme>//<slug>, part:<theme>//<slug>), front:<path>.',
+			forms: Object.fromEntries(
+				Object.entries( sceneDocs ).map( ( [ name, d ] ) => [
+					name,
+					`${ d.form }: ${ d.description }`,
+				] )
+			),
 		},
-		verbs: Object.fromEntries(
-			verbNames.map( ( v ) => [ v, VERB_ARGS[ v ] || '' ] )
-		),
+		verbs: verbDocs,
 		targets: targetNames,
 		locatorKeys: {
 			keys: LOCATOR_KEYS,
-			note: 'One of button, link, tab, option, menuitem, control, placeholder, text, role (+ name), selector, block; modifiers exact (default true in steps), nth, within (a target), in (page | canvas).',
+			note: `One of ${ NAME_KEYS.join( ', ' ) } (an accessible name or label), role (+ name), selector, block; modifiers ${ MODIFIER_KEYS.join( ', ' ) }: exact defaults to true in steps, within takes a target name, in is page | canvas.`,
 		},
 		frames: FRAMES,
 		arrowDirections: DIRECTIONS,
-		annotationTypes: [ 'outline', 'arrow', 'badge', 'dim' ],
+		annotationTypes: ANNOTATION_TYPES,
+		badgePositions: BADGE_POSITIONS,
 	};
 }

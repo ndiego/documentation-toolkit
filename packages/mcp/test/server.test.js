@@ -12,6 +12,11 @@ const fixture = path.resolve( here, '../../manifest/test/fixtures/valid' );
 let client;
 let server;
 
+it( 'runs with the no-boot guard from test/setup.js', () => {
+	// The test script loads it with --import; without it a bad call would download Chromium and boot WordPress.
+	assert.equal( process.env.WP_SCREENSHOTS_NO_AUTO_INSTALL, '1' );
+} );
+
 before( async () => {
 	const [ clientTransport, serverTransport ] =
 		InMemoryTransport.createLinkedPair();

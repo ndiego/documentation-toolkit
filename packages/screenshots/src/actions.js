@@ -321,3 +321,32 @@ export async function runSteps( ctx, steps ) {
 }
 
 export const verbNames = Object.keys( actions );
+
+/** What each verb takes, in the words the vocabulary tool and the docs use. Kept beside the verbs. */
+export const verbDocs = {
+	insertBlock:
+		'block name, or { name, attributes, innerBlocks }; the new block becomes selected',
+	selectBlock: 'block name, or { name, nth }',
+	setContent: 'block HTML replacing the whole post content',
+	openInserter: 'none',
+	searchInserter: 'search term; opens the inserter and waits for results',
+	openInspector: 'content | settings | styles (default settings)',
+	openDocumentSidebar: 'none',
+	openPanel: 'panel name to expand, e.g. "Dimensions"',
+	openBlockMenu: 'none; the block toolbar Options menu',
+	openToolbarDropdown: 'toolbar button name, e.g. "Align"',
+	openListView: 'none',
+	openOptionsMenu: 'none; the editor top-right Options menu',
+	click: 'locator key, e.g. { button: "Replace" }',
+	hover: 'locator key',
+	type: 'text, or { text, pace: "human" }',
+	fill: '{ <locator key>, value }',
+	select: '{ <locator key>, option } for a native select',
+	press: 'key chord: Enter, Escape, primary+k',
+	wait: '{ for: <target or locator key>, state?: visible | hidden | attached } or milliseconds',
+	setViewport: 'desktop | narrow | mobile | { width, height }',
+	setPreference:
+		'{ scope, key, value } for core, core/edit-post, core/edit-site',
+	scrollTo: 'locator key',
+	evaluate: 'JavaScript source run in the page',
+};

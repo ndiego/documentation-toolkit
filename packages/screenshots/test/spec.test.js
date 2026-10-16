@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadSpecs, loadSpec, filterSpecs, SpecError } from '../src/spec.js';
+import { verbNames, verbDocs } from '../src/actions.js';
+import { sceneNames, sceneDocs } from '../src/scenes.js';
+import { defaultPadFor } from '../src/targets.js';
+import { mergeStyle } from '../src/style.js';
 
 let root;
 let counter = 0;
@@ -1119,5 +1123,42 @@ describe( 'annotationScale', () => {
 				),
 			/annotationScale must be a positive number/
 		);
+	} );
+
+	it( 'rejects scene together with preset', () => {
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    preset: block-toolbar\n    block: core/image\n    scene: new-post\n    alt: x\n'
+				),
+			/a preset chooses its own scene/
+		);
+	} );
+} );
+
+describe( 'vocabulary docs', () => {
+	it( 'document every verb and nothing else', () => {
+		assert.deepEqual(
+			Object.keys( verbDocs ).sort(),
+			[ ...verbNames ].sort()
+		);
+	} );
+	it( 'document every scene and nothing else', () => {
+		assert.deepEqual(
+			Object.keys( sceneDocs ).sort(),
+			[ ...sceneNames ].sort()
+		);
+		for ( const doc of Object.values( sceneDocs ) ) {
+			assert.ok( doc.form && doc.description );
+		}
+	} );
+} );
+
+describe( 'target padding', () => {
+	it( 'is zero for admin-content and the style default otherwise', () => {
+		const style = mergeStyle();
+		assert.equal( defaultPadFor( 'admin-content', style ), 0 );
+		assert.equal( defaultPadFor( 'inspector', style ), style.pad );
+		assert.equal( defaultPadFor( null, style ), style.pad );
 	} );
 } );

@@ -3,9 +3,8 @@
  * config by hand. Writes absolute paths, because the desktop app does not see the user's shell PATH (nvm,
  * Homebrew and Volta installs all break a bare "npx").
  *
- * The registered launch uses a supported Node (22.19 to 25): the current one when it qualifies, otherwise the newest
- * supported one found in nvm, Volta, fnm, asdf or Homebrew, since WordPress Playground's native module has no
- * binaries beyond that.
+ * The registered launch uses a Node the engine supports (its runtime policy says which): the current one when it
+ * qualifies, otherwise the newest supported one found in nvm, Volta, fnm, asdf or Homebrew.
  *
  * How the server is launched afterwards depends on where this copy lives:
  *   - run through `npx -y @wp-docs-toolkit/mcp` (npm's temporary cache): register `node <npx-cli.js> -y
@@ -21,8 +20,7 @@ import { fileURLToPath } from 'node:url';
 import {
 	findSupportedNode,
 	nodeVersionOf,
-	isSupportedNode,
-	NODE_MAX_MAJOR,
+	unsupportedNodeMessage,
 } from '@wp-docs-toolkit/screenshots';
 
 const here = path.dirname( fileURLToPath( import.meta.url ) );
@@ -109,19 +107,21 @@ export function npxCliFor( nodeBin ) {
  */
 export function chooseNode( explicit ) {
 	if ( explicit ) {
-		const version = nodeVersionOf( explicit );
+		const bin = resolveBinary( explicit );
+		const version = bin && nodeVersionOf( bin );
 		if ( ! version ) {
 			throw new Error(
-				`--node ${ explicit } is not a runnable Node binary`
+				`--node ${ explicit } is not a runnable Node binary (give an absolute path)`
 			);
 		}
+		const problem = unsupportedNodeMessage( version );
 		return {
-			bin: explicit,
+			bin,
 			version,
 			switched: true,
-			note: isSupportedNode( version )
-				? null
-				: `Node ${ version } at ${ explicit } is outside the supported range (22.19 to ${ NODE_MAX_MAJOR }); screenshots will fail there.`,
+			note: problem
+				? `--node ${ bin }: ${ problem } Screenshots will fail on it.`
+				: null,
 		};
 	}
 	const found = findSupportedNode();
@@ -132,7 +132,7 @@ export function chooseNode( explicit ) {
 		bin: process.execPath,
 		version: process.versions.node,
 		switched: false,
-		note: `This machine's Node ${ process.versions.node } is not supported (WordPress Playground's native module covers Node 22.19 to ${ NODE_MAX_MAJOR }) and no supported Node was found in nvm, Volta, fnm, asdf or Homebrew. Install one (nvm install 24, or brew install node@24) and run this install again; it will register that Node.`,
+		note: `${ unsupportedNodeMessage() } None was found in nvm, Volta, fnm, asdf or Homebrew; after installing one, run this install again and it will register that Node.`,
 	};
 }
 
@@ -275,4 +275,23 @@ export function runUninstall( options = {} ) {
 		log( 'Removed from Claude Code (user scope)' );
 	}
 	return 0;
+}
+
+/**
+ * An absolute path for a binary given as a path or a bare name (looked up on PATH), or null.
+ * @param {string} given
+ * @return {string|null} absolute path to an existing file
+ */
+export function resolveBinary( given ) {
+	if ( given.includes( '/' ) || given.includes( '\\' ) ) {
+		const abs = path.resolve( given );
+		return fs.existsSync( abs ) ? abs : null;
+	}
+	for ( const dir of ( process.env.PATH || '' ).split( path.delimiter ) ) {
+		const candidate = path.join( dir, given );
+		if ( dir && fs.existsSync( candidate ) ) {
+			return candidate;
+		}
+	}
+	return null;
 }

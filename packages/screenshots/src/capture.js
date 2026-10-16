@@ -1,5 +1,10 @@
 import sharp from 'sharp';
-import { resolveTarget, isFullViewport, waitForTarget } from './targets.js';
+import {
+	resolveTarget,
+	isFullViewport,
+	waitForTarget,
+	defaultPadFor,
+} from './targets.js';
 import { resolveLocator } from './locators.js';
 import { applyAnnotations } from './annotate.js';
 import { encode, frameCard, stage } from './image.js';
@@ -124,7 +129,7 @@ export async function captureShot( ctx, shot ) {
 
 	// Size the annotations for how large this capture will be shown, from what we know before drawing them.
 	const vp0 = ctx.page.viewportSize();
-	const pad0 = capture.pad ?? style.pad;
+	const pad0 = capture.pad ?? defaultPadFor( targetName, style );
 	const captureWidth =
 		! isFullViewport( targetName ) && boxes.length
 			? union( boxes ).width + pad0 * 2
@@ -148,7 +153,7 @@ export async function captureShot( ctx, shot ) {
 	let clip = null;
 	if ( ! isFullViewport( targetName ) && boxes.length ) {
 		const wanted = union( boxes );
-		clip = padAndClamp( wanted, capture.pad ?? style.pad, vp );
+		clip = padAndClamp( wanted, pad0, vp );
 		const cutRight = wanted.x + wanted.width > vp.width + 0.5;
 		const cutBottom = wanted.y + wanted.height > vp.height + 0.5;
 		if ( cutRight || cutBottom || wanted.x < -0.5 || wanted.y < -0.5 ) {

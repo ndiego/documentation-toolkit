@@ -11,13 +11,17 @@ import { ensureSupportedNode } from './runtime.js';
 
 /**
  * Throw a user-facing error (printed without a stack trace by the CLI) when Playwright's Chromium is missing.
- * With `install: true`, download it first instead.
+ * With `install: true`, download it first instead (unless WP_SCREENSHOTS_NO_AUTO_INSTALL is set, for CI).
  * @param {{install?: boolean}} [options]
  */
 export async function ensureChromium( options = {} ) {
 	const { chromium } = await import( '@playwright/test' );
 	const exe = chromium.executablePath();
-	if ( ( ! exe || ! fs.existsSync( exe ) ) && options.install ) {
+	if (
+		( ! exe || ! fs.existsSync( exe ) ) &&
+		options.install &&
+		! process.env.WP_SCREENSHOTS_NO_AUTO_INSTALL
+	) {
 		// First run on a machine without the browser: fetch it (about 150 MB, a minute or two).
 		const { spawnSync } = await import( 'node:child_process' );
 		const cli = playwrightCliPath();
@@ -35,11 +39,8 @@ export async function ensureChromium( options = {} ) {
 		}
 	}
 	if ( ! exe || ! fs.existsSync( exe ) ) {
-		throw Object.assign(
-			new Error(
-				'Chromium is not installed for Playwright. Run once: npx playwright install chromium'
-			),
-			{ name: 'UserError' }
+		throw userError(
+			'Chromium is not installed for Playwright. Run once: npx playwright install chromium'
 		);
 	}
 }
@@ -78,25 +79,29 @@ export function freePort( host = '127.0.0.1' ) {
  * @return {Promise<{file: string|null, buffer: Buffer, width: number, height: number, encoding: string, frame: string, alt: string}>} the image
  */
 export async function shootPreset( config, options ) {
+	const prepared = prepareShot( config, options );
+	return renderShot( config, prepared, options );
+}
+
+/**
+ * Validate a one-off shot and write its spec to a temp directory, without booting anything. Callers that keep a
+ * warm session use this first so a bad request fails in milliseconds rather than after a boot.
+ * @param {Object} config
+ * @param {Object} options see shootPreset
+ * @return {{spec: Object, tmp: string, id: string, alt: string, discard: () => void}} the loaded spec, its temp directory, and how to drop it when the shot is not rendered
+ */
+export function prepareShot( config, options ) {
 	const name = options.preset || null;
 	if ( name && ! presetNames.includes( name ) ) {
-		throw Object.assign(
-			new Error(
-				`unknown preset "${ name }". Known presets: ${ presetNames.join( ', ' ) }`
-			),
-			{ name: 'UserError' }
+		throw userError(
+			`unknown preset "${ name }". Known presets: ${ presetNames.join( ', ' ) }`
 		);
 	}
 	if ( ! name && ! options.scene && ! options.steps?.length ) {
-		throw Object.assign(
-			new Error(
-				`give a preset (${ presetNames.join( ', ' ) }) or a scene and steps`
-			),
-			{ name: 'UserError' }
+		throw userError(
+			`give a preset (${ presetNames.join( ', ' ) }) or a scene and steps`
 		);
 	}
-	ensureSupportedNode();
-	await ensureChromium();
 	const params = {};
 	for ( const param of Object.keys( name ? presets[ name ].params : {} ) ) {
 		const value = options.params?.[ param ];
@@ -109,12 +114,41 @@ export async function shootPreset( config, options ) {
 	const tmp = fs.mkdtempSync(
 		path.join( os.tmpdir(), 'wp-screenshots-shoot-' )
 	);
+	const discard = () => fs.rmSync( tmp, { recursive: true, force: true } );
+	const specFile = path.join( tmp, 'shoot.yaml' );
+	fs.writeFileSync(
+		specFile,
+		YAML.stringify( buildAdhocSpec( name, params, id, alt, options ) )
+	);
 	try {
-		const specFile = path.join( tmp, 'shoot.yaml' );
-		const body = YAML.stringify(
-			buildAdhocSpec( name, params, id, alt, options )
-		);
-		fs.writeFileSync( specFile, body );
+		const spec = loadSpec( specFile, { ...config, specsBase: tmp } );
+		return { spec, tmp, id, alt, discard };
+	} catch ( e ) {
+		discard();
+		if ( e.name !== 'SpecError' ) {
+			throw e;
+		}
+		// The temp spec's path means nothing to the caller; keep the message about the shot itself.
+		throw userError( e.message.replace( /^.*?shoot\.yaml: /, '' ) );
+	}
+}
+
+/**
+ * Render a prepared shot: boot (or reuse a session), run, copy the image out, clean up the temp directory.
+ * @param {Object}                                                                    config
+ * @param {{spec: Object, tmp: string, id: string, alt: string, discard: () => void}} prepared from prepareShot
+ * @param {Object}                                                                    options  see shootPreset (session, out, headed, port, log)
+ * @return {Promise<Object>} the image, as shootPreset describes
+ */
+export async function renderShot( config, prepared, options = {} ) {
+	const { spec, tmp, id, alt } = prepared;
+	try {
+		if ( ! options.session ) {
+			// Node before Chromium, so an unsupported Node gets its own message rather than a missing-browser one.
+			// A passed-in session went through the same checks when it booted.
+			ensureSupportedNode();
+			await ensureChromium();
+		}
 		const adhoc = {
 			...config,
 			// A warm session already owns a port and a blueprint; a one-off run may pick a free port.
@@ -124,16 +158,6 @@ export async function shootPreset( config, options ) {
 			docsDir: null,
 			docsManifest: null,
 		};
-		let spec;
-		try {
-			spec = loadSpec( specFile, { ...adhoc, specsBase: tmp } );
-		} catch ( e ) {
-			// The temp spec's path means nothing to the caller; keep the message about the shot itself.
-			throw Object.assign(
-				new Error( e.message.replace( /^.*?shoot\.yaml: /, '' ) ),
-				{ name: 'UserError' }
-			);
-		}
 		const { summary, results } = await runShots( adhoc, {
 			specs: [ spec ],
 			mode: 'run',
@@ -173,8 +197,12 @@ export async function shootPreset( config, options ) {
 			mimeType: ext === 'png' ? 'image/png' : 'image/webp',
 		};
 	} finally {
-		fs.rmSync( tmp, { recursive: true, force: true } );
+		prepared.discard();
 	}
+}
+
+function userError( message ) {
+	return Object.assign( new Error( message ), { name: 'UserError' } );
 }
 
 async function portFor( config, options ) {

@@ -14,6 +14,11 @@ All packages in this repository share one version. Consumers pin a tag.
   verbs, targets, locator keys and frames so an agent can build a shot no preset covers.
 - MCP: the `screenshot` tool takes `target` to crop to a named region (`admin-content` for a wp-admin screen
   without the menu and toolbar, `inspector`, `block-toolbar`, …) instead of the preset's default.
+- MCP: tool descriptions and the `vocabulary` output are built from the engine's own tables (targets, frames and
+  ratios, viewports, scenes, locator keys, badge positions, preset parameters), so they cannot drift from what a
+  spec accepts. `vocabulary.scenes.forms` replaces the prose note. Tight presets declare an `annotationScope`.
+- Fix: a `screenshot` call with a bad preset, verb or locator is rejected before WordPress boots; the MCP tests
+  run under a guard that never downloads Chromium, so CI fails fast instead of hanging.
 
 ## 0.3.3 (2026-10-16)
 

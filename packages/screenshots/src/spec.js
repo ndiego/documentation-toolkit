@@ -37,8 +37,8 @@ const CAPTURE_KEYS = [
 	'annotationScale',
 	'mask',
 ];
-const ANNOTATION_TYPES = [ 'outline', 'badge', 'arrow', 'dim' ];
-const DIRECTIONS = [
+export const ANNOTATION_TYPES = [ 'outline', 'badge', 'arrow', 'dim' ];
+export const DIRECTIONS = [
 	'top',
 	'bottom',
 	'left',
@@ -48,8 +48,23 @@ const DIRECTIONS = [
 	'bottom-left',
 	'bottom-right',
 ];
+export const BADGE_POSITIONS = [
+	'top-left',
+	'top-right',
+	'bottom-left',
+	'bottom-right',
+];
 // Verbs whose argument is a locator key (validated at load time).
 const LOCATOR_VERBS = [ 'click', 'hover', 'scrollTo' ];
+
+/**
+ * The frame names a capture may set: the style's frames plus `plain` (the raw capture, no stage).
+ * @param {Object} [style]
+ * @return {string[]} frame names
+ */
+export function captureFrameNames( style ) {
+	return [ 'plain', ...frameNames( style ) ];
+}
 
 export class SpecError extends Error {
 	constructor( file, message ) {
@@ -132,6 +147,12 @@ export function loadSpec( file, config ) {
 			throw new SpecError( file, `${ where } must be a mapping` );
 		}
 		let preset = null;
+		if ( shot.preset !== undefined && shot.scene !== undefined ) {
+			throw new SpecError(
+				file,
+				`${ where }: a preset chooses its own scene; drop \`scene\` or drop \`preset\` and write the steps`
+			);
+		}
 		if ( shot.preset !== undefined ) {
 			if (
 				typeof shot.preset !== 'string' ||
@@ -373,16 +394,11 @@ function normaliseCapture( file, where, capture, config ) {
 		}
 		if (
 			position !== undefined &&
-			! [
-				'top-left',
-				'top-right',
-				'bottom-left',
-				'bottom-right',
-			].includes( position )
+			! BADGE_POSITIONS.includes( position )
 		) {
 			throw new SpecError(
 				file,
-				`${ where } capture.annotate[${ i }]: position must be top-left | top-right | bottom-left | bottom-right`
+				`${ where } capture.annotate[${ i }]: position must be ${ BADGE_POSITIONS.join( ' | ' ) }`
 			);
 		}
 		return { type, ...value };
@@ -422,7 +438,7 @@ function normaliseCapture( file, where, capture, config ) {
 			`${ where } capture: pad must be a number of CSS pixels`
 		);
 	}
-	const frames = [ 'plain', ...frameNames( config?.style ) ];
+	const frames = captureFrameNames( config?.style );
 	if ( out.frame && ! frames.includes( out.frame ) ) {
 		throw new SpecError(
 			file,
