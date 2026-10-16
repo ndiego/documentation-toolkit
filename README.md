@@ -117,7 +117,8 @@ action against its own fixture on every pull request.
 1. Update `CHANGELOG.md` and bump the version in every package manifest, `.claude-plugin/plugin.json` and the
    `version` in `packages/mcp/src/server.js` (one version for everything; inter-package dependencies pin it).
 2. Tag `vX.Y.Z` on `trunk` and push the tag.
-3. Publish to npm, in dependency order, from a logged-in shell (`npm login`; the `@wp-docs-toolkit` scope must exist
+3. Publish to npm, in dependency order, from a logged-in shell (`npm login --registry https://registry.npmjs.org`;
+   each package pins the public registry in `publishConfig`, so a corporate proxy in `.npmrc` is bypassed; the `@wp-docs-toolkit` scope must exist
    as an npm organisation, free for public packages, or be replaced by the publisher's own scope):
    ```sh
    npm publish -w @wp-docs-toolkit/manifest

@@ -36,6 +36,7 @@
 		"test": "node --test test/*.test.js"
 	},
 	"publishConfig": {
-		"access": "public"
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
 	}
 }
