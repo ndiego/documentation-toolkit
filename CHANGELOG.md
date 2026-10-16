@@ -5,6 +5,8 @@ All packages in this repository share one version. Consumers pin a tag.
 ## Unreleased
 
 - The `handbook-cutover` skill moved to wp-documentation-migration: a one-time migration procedure, not a utility.
+- 0.3.2 is the first version published to npm (`@wp-docs-toolkit/*`, 2026-10-16). The README's install line is now
+  `npx -y @wp-docs-toolkit/mcp install`.
 
 ## 0.3.2 (2026-10-16)
 

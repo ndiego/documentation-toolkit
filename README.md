@@ -23,23 +23,24 @@ only enforces it.
 
 ## Share it with a colleague
 
-Paste this in Slack. It is everything a technical colleague needs, from a terminal to a prompt. Once the packages
-are on npm, the install line is `npx -y @wp-docs-toolkit/mcp install`; until then, the script below does the same
-from a git checkout:
+Paste this in Slack. It is everything a technical colleague needs, from a terminal to a prompt:
 
-> **wp-docs-toolkit** takes reproducible screenshots of the WordPress UI from a prompt. Install (macOS/Linux, needs
-> Node 22.19+ and git; about two minutes):
+> **wp-docs-toolkit** takes reproducible screenshots of the WordPress UI from a prompt. Install (needs Node 22.19+;
+> one command, no clone):
 > ```
-> curl -fsSL https://raw.githubusercontent.com/ndiego/wp-docs-toolkit/trunk/scripts/install.sh | sh
+> npx -y @wp-docs-toolkit/mcp install
 > ```
 > Then quit and reopen Claude Desktop, and in a new chat say: *"Take a screenshot of the General Settings page in
-> wp-admin."* Claude Code is registered too. More to try: *"the Image block on the editor canvas"*, *"its Styles
-> tab with the Resolution setting highlighted"*, *"the site editor's Styles view"*. Ask *"what screenshot presets
-> are there?"* to see the list. ChatGPT needs a tunnel; the installer prints the steps.
+> wp-admin."* The first one takes a minute (it downloads a browser and boots WordPress); after that a few seconds.
+> Claude Code is registered too. More to try: *"the Image block on the editor canvas"*, *"its Styles tab with the
+> Resolution setting highlighted"*, *"the post editor with an arrow on the Save draft button"*. Ask *"what
+> screenshot presets are there?"* to see the list. ChatGPT needs a tunnel: `npx -y @wp-docs-toolkit/mcp --help`.
 
-The script clones the toolkit into `~/.wp-docs-toolkit`, installs dependencies and Chromium, and registers the MCP
-server in Claude Desktop (merging into the existing config, with a backup) and in Claude Code. Re-run it to update.
-What it installs is documented in [packages/mcp](packages/mcp/README.md).
+The command registers the MCP server in Claude Desktop (merging into the existing config, with a backup) and in
+Claude Code, with absolute paths so the desktop app finds Node. `npx -y @wp-docs-toolkit/mcp uninstall` removes it.
+Details and the ChatGPT route are in [packages/mcp](packages/mcp/README.md). The packages are on npm under
+[`@wp-docs-toolkit`](https://www.npmjs.com/org/wp-docs-toolkit); `scripts/install.sh` remains for installing from a
+git checkout.
 
 ## Quick start: one screenshot, nothing to configure
 
@@ -59,8 +60,9 @@ Code plugin (below) or connect the MCP server (`packages/mcp/`) to Claude Deskto
 
 Pin a tag, never a branch (rule 4 below). Every package shares the repository version.
 
-**npm packages.** Not published yet. Until they are, consume them as path dependencies into a checkout of this
-repo, for example a git submodule at `toolkit/`:
+**npm packages.** `@wp-docs-toolkit/screenshots`, `@wp-docs-toolkit/manifest`, `@wp-docs-toolkit/demo-site` and
+`@wp-docs-toolkit/mcp`, one shared version. A documentation project depends on `@wp-docs-toolkit/screenshots`
+from npm. The submodule route below still works for a project that wants to track a git tag instead:
 
 ```sh
 git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
@@ -126,8 +128,9 @@ action against its own fixture on every pull request.
    npm publish -w @wp-docs-toolkit/screenshots
    npm publish -w @wp-docs-toolkit/mcp
    ```
-   `npm pack --dry-run -w <package>` shows what each one ships. After the first publish, the install line for
-   colleagues is `npx -y @wp-docs-toolkit/mcp install` and the Slack message in this README should say so.
+   `npm pack --dry-run -w <package>` shows what each one ships. The account requires a one-time password per
+   publish, approved in the browser, so publish from a terminal, not from an agent session. Staged publishes
+   show as `0.0.0-stage` placeholders until approved on npmjs.com.
 4. Consumers check out the new tag inside their `toolkit/` submodule and commit the pointer.
 
 ## History
