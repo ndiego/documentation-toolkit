@@ -80,6 +80,8 @@ One post per block, holding a representative instance of it, so the `block-canva
 | Slug | Block | Content |
 |---|---|---|
 | `block-image` | `core/image` | A paragraph, the `hero` photo with a caption, a paragraph; featured image `hero`; dated 2023 so it never leads the home page |
+| `block-gallery` | `core/gallery` | A paragraph, a gallery of `landscape-1..3`, a paragraph; featured image `landscape-1` |
+| `block-table` | `core/table` | A paragraph, a three-column table with a header row, a paragraph; featured image `landscape-3` |
 
 Adding a block to the showcase means one more `wp_screenshots_upsert( 'block-<name>', … )` in `seed.php` with the
 block's markup exactly as its `save()` emits it, plus a row here and in `content.json`.

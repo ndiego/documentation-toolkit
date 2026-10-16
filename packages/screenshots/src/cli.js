@@ -27,6 +27,7 @@ Commands
   dev       Open a headed browser, run a shot's scene and steps, then pause in the Playwright Inspector
   shoot     Render one shot from a preset without a spec file (--preset <name> [--<param> <value>] [--out <file>])
   presets   List the presets (subjects) a shot can be built from, with their parameters
+  preview   Write PNG copies of generated images (filters apply) into <workDir>/preview for review
   doctor    Check the local setup
   list      List specs and shots
   vocab     List the scenes, step verbs and capture targets specs can use
@@ -202,6 +203,8 @@ async function main() {
 		}
 		case 'shoot':
 			return shoot( config, flags );
+		case 'preview':
+			return preview( config, filter, flags );
 		case 'doctor':
 			return ( await doctor( config ) ) ? 0 : 1;
 		case 'vocab':
@@ -279,6 +282,61 @@ async function shoot( config, options ) {
 	fs.copyFileSync( produced, out );
 	console.log( `Wrote ${ path.relative( process.cwd(), out ) || out }` );
 	fs.rmSync( tmp, { recursive: true, force: true } );
+	return 0;
+}
+
+/**
+ * Convert the generated images of the matching shots to PNG under <workDir>/preview (or --out <dir>) and print
+ * the paths. WebP is what the docs ship; PNG is what image viewers, diff tools and agents read reliably.
+ * @param {Object} config
+ * @param {Object} filter
+ * @param {Object} options
+ */
+async function preview( config, filter, options ) {
+	const sharp = ( await import( 'sharp' ) ).default;
+	const specs = filterSpecs( loadSpecs( config ), filter );
+	if ( ! specs.length ) {
+		throw new UserError( 'No shot specs matched the filter.' );
+	}
+	const ext = config.style.format === 'png' ? 'png' : 'webp';
+	const outDir = path.resolve(
+		String( options.out || path.join( config.workDir, 'preview' ) )
+	);
+	const maxWidth = options.width ? Number( options.width ) : null;
+	let count = 0;
+	for ( const spec of specs ) {
+		for ( const shot of spec.shots ) {
+			const src = path.join(
+				config.outDir,
+				spec.article,
+				`${ shot.id }.${ ext }`
+			);
+			if ( ! fs.existsSync( src ) ) {
+				console.log(
+					`missing  ${ spec.article }/${ shot.id } (not generated yet)`
+				);
+				continue;
+			}
+			const dest = path.join( outDir, spec.article, `${ shot.id }.png` );
+			fs.mkdirSync( path.dirname( dest ), { recursive: true } );
+			let image = sharp( src );
+			if ( maxWidth ) {
+				image = image.resize( {
+					width: maxWidth,
+					withoutEnlargement: true,
+				} );
+			}
+			await image.png().toFile( dest );
+			const meta = await sharp( src ).metadata();
+			console.log(
+				`${ dest }  (${ meta.width }×${ meta.height }, ${ shot.alt })`
+			);
+			count += 1;
+		}
+	}
+	console.log(
+		`${ count } preview(s) written to ${ path.relative( process.cwd(), outDir ) || outDir }`
+	);
 	return 0;
 }
 

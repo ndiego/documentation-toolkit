@@ -13,7 +13,7 @@ shots:
     alt: The Image block toolbar, with an arrow pointing at the Replace button.
     capture:
       annotate:
-        - arrow: { button: Replace, from: top }
+        - arrow: { button: Replace, from: bottom }
 
   - id: settings
     preset: block-settings

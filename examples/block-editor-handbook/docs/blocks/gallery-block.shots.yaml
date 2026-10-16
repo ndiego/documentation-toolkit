@@ -1,0 +1,15 @@
+article: gallery-block
+shots:
+  - id: canvas
+    preset: block-canvas
+    block: core/gallery
+    alt: A Gallery block on the editor canvas, selected, showing three landscape photos in a row.
+
+  - id: settings
+    preset: block-settings
+    block: core/gallery
+    tab: settings
+    alt: The Gallery block's Settings tab in the block inspector, with the Columns control outlined.
+    capture:
+      annotate:
+        - outline: { control: Columns }

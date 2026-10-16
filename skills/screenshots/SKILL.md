@@ -30,6 +30,21 @@ toolkit for the frames, the annotation style and the text-in-images preference (
 Block presets expect the demo site to hold a showcase post `block-<name>` for the block; when it does not, pass
 `post: new` (inserts the block into a fresh post) or write the steps by hand.
 
+## The loop
+
+1. Write or edit the spec (a preset plus the request's specifics). `npx wp-screenshots lint` catches typos before
+   anything boots.
+2. Render it: `npx wp-screenshots run --article <slug>` (local preview is fine while iterating).
+3. Look at it: `npx wp-screenshots preview --article <slug> --width 1400` writes PNG copies under
+   `<workDir>/preview/` and prints their paths; open them with the Read tool. Check that nothing is cut off, no
+   stray popover or inline toolbar is showing, the annotation points at the right element, and the frame suits the
+   subject. If something is wrong, change the spec (a different target, `pad`, `fit: content`, a `wait` step, a
+   different `from` for an arrow) and go back to step 2.
+4. Place it: `npx wp-screenshots snippet --article <slug>` prints the Markdown image lines with the alt text; put
+   them where the article discusses that UI. `lint` confirms the references resolve.
+5. Hand over: the canonical pixels come from `check --docker` or the project's CI job, then `update`. Say so in
+   the pull request; do not commit local renders over canonical ones.
+
 ## Commands (run from the project directory, the one holding `shots.config.js`)
 
 - `npx wp-screenshots lint` validates specs, cross-checks Markdown image references and finds orphans. No browser
@@ -40,8 +55,8 @@ Block presets expect the demo site to hold a showcase post `block-<name>` for th
 - `npx wp-screenshots run [--article <slug> | --section <path>]` renders and writes images and the manifest directly.
 - `npx wp-screenshots dev --article <slug> --shot <id>` opens a headed browser, runs the scene and steps, and pauses in
   the Playwright Inspector. Use its "Pick locator" tool to find role and name for a new step.
-- `doctor`, `list`, `vocab`, `snippet` check the setup, list specs, print the step vocabulary, and print the Markdown
-  image lines for an article.
+- `doctor`, `list`, `vocab`, `snippet`, `preview` check the setup, list specs, print the step vocabulary, print the
+  Markdown image lines for an article, and write PNG copies of generated images for review.
 
 ## Rules
 

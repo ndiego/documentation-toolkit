@@ -35,7 +35,10 @@ Restructured as an npm workspaces monorepo focused on maintaining WordPress.org 
   template before); `selectBlock` no longer leaves the inline formatting toolbar over blocks with a caption.
 - New package `@wporg-docs/demo-site`: the blueprint, mu-plugin and content pack moved here from the migration
   repo, now on the Ipsum theme with a `block-image` showcase post.
-- New `style/SCREENSHOTS.md` guideline and `examples/block-editor-handbook/`, a sample project rendered end to end.
+- New `style/SCREENSHOTS.md` guideline and `examples/block-editor-handbook/`, a sample project rendered end to end
+  (Image, Gallery and Table blocks, the site editor).
+- Screenshots: `wp-screenshots preview` writes PNG copies of generated images for review by eye or by an agent;
+  the `screenshots` skill describes the render, look, fix, place loop around it.
 
 ## 0.1.0 (2026-10-13)
 

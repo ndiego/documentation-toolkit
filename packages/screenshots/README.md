@@ -49,6 +49,7 @@ wp-screenshots lint [--fix]                 # specs, Markdown references, orphan
 wp-screenshots shoot --preset <name> [--<param> <value>] [--frame <frame>] [--out <file>]   # one image, no spec
 wp-screenshots presets                      # the subjects a shot can be built from, with their parameters
 wp-screenshots snippet --article <slug> [--from docs/path/file.md]
+wp-screenshots preview [filters] [--width <px>] [--out <dir>]   # PNG copies of generated images for review
 wp-screenshots dev --article <slug> --shot <id>   # headed browser, pauses in the Playwright Inspector
 wp-screenshots doctor | list | vocab
 ```

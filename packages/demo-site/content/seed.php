@@ -676,6 +676,38 @@ $block_image = wp_screenshots_upsert(
 );
 set_post_thumbnail( $block_image, $wp_screenshots_media['hero'] );
 
+$block_gallery = wp_screenshots_upsert(
+	'block-gallery',
+	array(
+		'post_title'    => 'Gallery block',
+		'post_date'     => '2023-01-11 09:00:00',
+		'post_author'   => $author_1,
+		'post_content'  => wp_screenshots_p( 'Three views from the same afternoon on the cliff path, taken an hour apart.' )
+			. "\n\n<!-- wp:gallery {\"linkTo\":\"none\"} -->\n<figure class=\"wp-block-gallery has-nested-images columns-default is-cropped\">{$gallery_items}</figure>\n<!-- /wp:gallery -->\n\n"
+			. wp_screenshots_p( 'The tide was out for the first two and coming in fast by the third.' ),
+		'post_category' => array( $cat_guides ),
+		'tags_input'    => array( 'photography' ),
+	)
+);
+set_post_thumbnail( $block_gallery, $wp_screenshots_media['landscape-1'] );
+
+$block_table = wp_screenshots_upsert(
+	'block-table',
+	array(
+		'post_title'    => 'Table block',
+		'post_date'     => '2023-01-12 09:00:00',
+		'post_author'   => $author_2,
+		'post_content'  => wp_screenshots_p( 'The three sections of the coast path, with distances and what is underfoot.' )
+			. "\n\n<!-- wp:table -->\n<figure class=\"wp-block-table\"><table class=\"has-fixed-layout\"><thead><tr><th>Section</th><th>Distance</th><th>Terrain</th></tr></thead>"
+			. '<tbody><tr><td>Harbour to the lighthouse</td><td>3.5 km</td><td>Paved, then grass</td></tr><tr><td>Lighthouse to the cove</td><td>4 km</td><td>Cliff path</td></tr><tr><td>Cove to the ferry</td><td>3.5 km</td><td>Sand and boardwalk</td></tr></tbody>'
+			. "</table></figure>\n<!-- /wp:table -->\n\n"
+			. wp_screenshots_p( 'Allow extra time on the cliff section after rain.' ),
+		'post_category' => array( $cat_guides ),
+		'tags_input'    => array( 'planning' ),
+	)
+);
+set_post_thumbnail( $block_table, $wp_screenshots_media['landscape-3'] );
+
 /* -------------------------------------------------------------------------------------------------------------
  * Site identity and options
  * ---------------------------------------------------------------------------------------------------------- */
@@ -693,7 +725,9 @@ update_option(
 		'pack'  => 'saltmarsh-placeholder',
 		'media' => $wp_screenshots_media,
 		'blocks' => array(
-			'block-image' => $block_image,
+			'block-image'   => $block_image,
+			'block-gallery' => $block_gallery,
+			'block-table'   => $block_table,
 		),
 		'pages' => array(
 			'sample-page' => $page_sample,

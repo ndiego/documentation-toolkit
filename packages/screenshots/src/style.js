@@ -58,7 +58,7 @@ export const defaultStyle = {
 	arrow: {
 		color: '#3858e9',
 		width: 3,
-		length: 56, // CSS px from the tail to the target's edge
+		length: 40, // CSS px from the tail to the target's edge; short, so it rarely crosses neighbouring text
 		head: 12, // arrowhead size
 		gap: 6, // space between the arrowhead tip and the target
 		halo: { color: '#ffffff', width: 2 },

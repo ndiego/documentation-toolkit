@@ -74,6 +74,10 @@ it moves between releases:
 - **Badge** (numbered) when the prose enumerates steps or several controls in one image.
 - **Dim** when the surrounding interface is noisy and the subject needs isolating.
 
+Arrows are short (40 CSS px) and come from the direction with the most empty space. A toolbar sits directly
+under the text above it, so an arrow from `top` crosses that text; point at toolbar buttons from `bottom` or from
+the side instead. Outlines have no such problem, which is one more reason they are the default.
+
 One annotation type per image. The accent is WordPress blue (`#3858e9`) with a 2 px white halo on both sides of
 the stroke; the editor's own selection outline is the same blue, and the halo is what keeps an annotation legible on
 top of it. Annotations never rely on colour alone: outlines carry stroke weight, badges carry numbers.
@@ -85,6 +89,11 @@ capture:
 ```
 
 ![The Image block toolbar, with an arrow pointing at the Replace button.](../examples/block-editor-handbook/docs/assets/screenshots/image-block/toolbar.webp)
+
+![A Gallery block on the editor canvas, selected, showing three landscape photos in a row.](../examples/block-editor-handbook/docs/assets/screenshots/gallery-block/canvas.webp)
+
+A three-column gallery is wider than it is tall, so `auto` put it on the banner frame; the Image block above landed
+on 4:3. The same preset, two shapes, each on the ratio that suits it.
 
 ## Text in images
 

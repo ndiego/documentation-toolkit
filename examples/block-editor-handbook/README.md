@@ -15,4 +15,4 @@ npx wp-screenshots lint
 ```
 
 Every shot here is built from a preset, so the specs read as subjects rather than scripts. `npx wp-screenshots presets`
-lists them.
+lists them. Articles: the Image, Gallery and Table blocks, and the site editor.

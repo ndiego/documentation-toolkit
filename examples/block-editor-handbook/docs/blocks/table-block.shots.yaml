@@ -1,0 +1,20 @@
+article: table-block
+shots:
+  - id: canvas
+    preset: block-canvas
+    block: core/table
+    alt: A Table block on the editor canvas, selected, showing a three-column table of walking routes.
+
+  - id: toolbar
+    preset: block-toolbar
+    block: core/table
+    alt: The Table block toolbar, with the Edit table button outlined.
+    capture:
+      annotate:
+        - outline: { button: Edit table }
+
+  - id: styles
+    preset: block-settings
+    block: core/table
+    tab: styles
+    alt: The Table block's Styles tab in the block inspector, where the Default and Stripes styles are chosen.

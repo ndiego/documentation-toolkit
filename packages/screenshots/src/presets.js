@@ -40,7 +40,8 @@ export const presets = {
 		expand: ( { block, post } ) => ( {
 			scene: sceneFor( block, post ),
 			steps: stepsFor( block, post ),
-			capture: { target: 'block-toolbar', pad: 24, frame: 'banner' },
+			// Tight: a toolbar sits right under the previous block, and a wide pad drags that text in half-cut.
+			capture: { target: 'block-toolbar', pad: 6, frame: 'banner' },
 		} ),
 	},
 	'block-settings': {
