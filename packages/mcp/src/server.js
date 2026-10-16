@@ -20,6 +20,7 @@ import {
 	presetNames,
 	shootPreset,
 	openSession,
+	ensureChromium,
 } from '@wp-docs-toolkit/screenshots';
 import { validateManifest } from '@wp-docs-toolkit/manifest';
 
@@ -139,7 +140,6 @@ export function createServer( options = {} ) {
 			},
 		},
 		async ( args ) => {
-			const { config, session } = await warm.get();
 			const params = {};
 			for ( const key of [
 				'block',
@@ -154,16 +154,18 @@ export function createServer( options = {} ) {
 					params[ key ] = args[ key ];
 				}
 			}
-			const result = await shootPreset( config, {
-				preset: args.preset,
-				params,
-				alt: args.alt,
-				frame: args.frame,
-				out: args.out,
-				session,
-				log: () => {},
-			} );
-			warm.touch();
+			// One WordPress session, one screenshot at a time: concurrent calls queue behind each other.
+			const result = await warm.run( ( { config, session } ) =>
+				shootPreset( config, {
+					preset: args.preset,
+					params,
+					alt: args.alt,
+					frame: args.frame,
+					out: args.out,
+					session,
+					log: () => {},
+				} )
+			);
 			const png = await sharp( result.buffer )
 				.resize( { width: maxWidth, withoutEnlargement: true } )
 				.png()
@@ -303,7 +305,7 @@ export function describePresets() {
  * @param {Object} [options]
  * @param {string} [options.project] path to a shots.config.js
  * @param {number} [options.idleMs]  idle timeout; 0 disables it
- * @return {{get: () => Promise<{config: Object, session: Object}>, touch: () => void, close: () => Promise<void>}} the holder
+ * @return {{get: () => Promise<{config: Object, session: Object}>, run: (fn: ( env: Object ) => Promise<Object>) => Promise<Object>, touch: () => void, close: () => Promise<void>}} the holder
  */
 export function createWarmSession( options = {} ) {
 	const idleMs = options.idleMs ?? 10 * 60 * 1000;
@@ -331,6 +333,18 @@ export function createWarmSession( options = {} ) {
 			await current.close();
 		}
 	};
+	let queue = Promise.resolve();
+	/**
+	 * Run `fn( { config, session } )` with exclusive use of the session; calls are serialized.
+	 * @param {( env: {config: Object, session: Object} ) => Promise<Object>} fn
+	 * @return {Promise<Object>} what `fn` resolves to
+	 */
+	const run = ( fn ) => {
+		const job = queue.then( async () => fn( await get() ) );
+		// Keep the chain alive after a failure so the next call still runs.
+		queue = job.catch( () => {} ).then( armIdle );
+		return job;
+	};
 	const get = async () => {
 		if ( ! config ) {
 			config = await loadConfig( options.project, {
@@ -338,6 +352,7 @@ export function createWarmSession( options = {} ) {
 			} );
 		}
 		if ( ! session ) {
+			await ensureChromium( { install: true } );
 			if ( ! opening ) {
 				opening = openSession( { config, log: () => {} } ).finally(
 					() => {
@@ -352,5 +367,5 @@ export function createWarmSession( options = {} ) {
 		armIdle();
 		return { config, session };
 	};
-	return { get, touch: armIdle, close };
+	return { get, run, touch: armIdle, close };
 }

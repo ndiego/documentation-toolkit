@@ -9,6 +9,9 @@ asking in words.
 | `list_presets` | The subjects a screenshot can be taken of, with their parameters. |
 | `screenshot` | Render one subject from a preset (a block on the canvas, its toolbar or settings, the site editor, a wp-admin screen, the front end) against the bundled demo site (WordPress 7.1, the Ipsum theme, demo content). Returns the image inline and writes the WebP when given `out`. The first call boots WordPress and Chromium (10-20 s); later calls reuse them (a few seconds). |
 | `restart_environment` | Stop the warm WordPress session so the next screenshot boots a fresh site. |
+
+Screenshot calls are serialized on the one warm session; concurrent requests wait their turn. If Chromium is missing on
+first use, the server downloads it (about 150 MB) before the first screenshot.
 | `validate_manifest` | Check a `manifest.json` for the developer.wordpress.org importer, same checks as the CI action. |
 
 The WordPress session stays warm between calls and closes after ten minutes unused (`--idle <minutes>`, `0` to
@@ -19,6 +22,18 @@ Every call renders a local preview. Canonical pixels for committing still come f
 in the documentation project; the tool says so in its result.
 
 ## Setup
+
+### The short way (macOS, Linux)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ndiego/wp-docs-toolkit/trunk/scripts/install.sh | sh
+```
+
+Clones the toolkit into `~/.wp-docs-toolkit`, installs dependencies and Chromium, registers the server in Claude
+Desktop and (if the `claude` CLI exists) Claude Code, and prints the ChatGPT steps. Re-run to update. On Windows,
+follow the manual steps below for now.
+
+### The manual way
 
 Once, on the machine that will run the server:
 
@@ -58,16 +73,22 @@ claude mcp add wp-docs-toolkit -- node /path/to/wp-docs-toolkit/packages/mcp/src
 
 ### ChatGPT and other remote clients
 
-ChatGPT connects to MCP servers over HTTP, not stdio. Run the server in HTTP mode and expose it:
+ChatGPT connects only to remote HTTPS MCP servers (Developer Mode, Settings → Apps & Connectors → Advanced); a
+local stdio process cannot be added. Run the server in HTTP mode with a token, expose it, and add the URL:
 
 ```sh
-npx wp-docs-mcp --http --port 3920        # http://127.0.0.1:3920/mcp, Streamable HTTP
+cd ~/.wp-docs-toolkit
+npx wp-docs-mcp --http --token "$(openssl rand -hex 16)"     # prints the token in use on the first line
+cloudflared tunnel --url http://127.0.0.1:3920                # or ngrok; prints an https://… URL
 ```
 
-The server has no authentication of its own. Keep it on localhost and put a tunnel or reverse proxy with
-authentication in front of it (for example `cloudflared tunnel --url http://127.0.0.1:3920` for a test), then add
-the public `/mcp` URL as a connector in ChatGPT (Settings → Connectors, developer mode). ChatGPT shows the text
-result; whether it displays the inline image depends on the client.
+In ChatGPT, create a connector with `https://<tunnel host>/mcp/<token>` and "No authentication": the token in the
+path is what protects the server, since ChatGPT cannot send a bearer header for a no-auth connector. Clients that
+can send headers use `Authorization: Bearer <token>` against `/mcp` instead. `GET /healthz` answers without a
+token. The server refuses to listen on a non-localhost address without a token. ChatGPT shows the text result;
+whether it displays the inline image depends on the client version. Stop the tunnel and the server when done.
+
+Environment variables `PORT`, `HOST` and `WP_DOCS_MCP_TOKEN` are read when the flags are absent, for containers.
 
 ### Rendering against a documentation project
 

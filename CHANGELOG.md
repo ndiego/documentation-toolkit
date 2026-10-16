@@ -11,6 +11,10 @@ All packages in this repository share one version. Consumers pin a tag.
 - Screenshots: sessions. `openSession()` boots Playground and the browser once and `runShots`/`shootPreset` accept
   a `session` to reuse, so a long-lived caller pays the boot once. The MCP server keeps one warm session (idle
   timeout `--idle`, default 10 minutes) and adds a `restart_environment` tool; a second screenshot takes seconds.
+- MCP: `scripts/install.sh`, a one-line installer that clones to `~/.wp-docs-toolkit`, installs Chromium and
+  registers the server in Claude Desktop and Claude Code. HTTP mode gains token auth (`--token` /
+  `WP_DOCS_MCP_TOKEN`, bearer header or `/mcp/<token>` path), `GET /healthz`, `PORT`/`HOST` env, refuses to bind a
+  non-local address without a token, serializes screenshot calls, and auto-installs Chromium on first use.
 
 ## 0.2.1 (2026-10-16)
 

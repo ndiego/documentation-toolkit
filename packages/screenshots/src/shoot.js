@@ -8,10 +8,32 @@ import { runShots } from './runner.js';
 
 /**
  * Throw a user-facing error (printed without a stack trace by the CLI) when Playwright's Chromium is missing.
+ * With `install: true`, download it first instead.
+ * @param {{install?: boolean}} [options]
  */
-export async function ensureChromium() {
+export async function ensureChromium( options = {} ) {
 	const { chromium } = await import( '@playwright/test' );
 	const exe = chromium.executablePath();
+	if ( ( ! exe || ! fs.existsSync( exe ) ) && options.install ) {
+		// First run on a machine without the browser: fetch it (about 150 MB, a minute or two).
+		const { spawnSync } = await import( 'node:child_process' );
+		const { createRequire } = await import( 'node:module' );
+		const cli = createRequire( import.meta.url ).resolve(
+			'playwright/cli.js'
+		);
+		const result = spawnSync(
+			process.execPath,
+			[ cli, 'install', 'chromium' ],
+			{
+				stdio: [ 'ignore', 'ignore', 'inherit' ],
+			}
+		);
+		if ( result.status !== 0 ) {
+			throw new Error(
+				'Chromium download failed; run: npx playwright install chromium'
+			);
+		}
+	}
 	if ( ! exe || ! fs.existsSync( exe ) ) {
 		throw Object.assign(
 			new Error(

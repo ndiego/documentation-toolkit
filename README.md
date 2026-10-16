@@ -21,6 +21,24 @@ Planned next: style enforcement (WordPress.org spelling, terminology and formatt
 skill that applies it). The Docs team style guide on make.wordpress.org/docs stays the source of truth; the toolkit
 only enforces it.
 
+## Share it with a colleague
+
+Paste this in Slack. It is everything a technical colleague needs, from a terminal to a prompt:
+
+> **wp-docs-toolkit** takes reproducible screenshots of the WordPress UI from a prompt. Install (macOS/Linux, needs
+> Node 22.19+ and git; about two minutes):
+> ```
+> curl -fsSL https://raw.githubusercontent.com/ndiego/wp-docs-toolkit/trunk/scripts/install.sh | sh
+> ```
+> Then quit and reopen Claude Desktop, and in a new chat say: *"Take a screenshot of the General Settings page in
+> wp-admin."* Claude Code is registered too. More to try: *"the Image block on the editor canvas"*, *"its Styles
+> tab with the Resolution setting highlighted"*, *"the site editor's Styles view"*. Ask *"what screenshot presets
+> are there?"* to see the list. ChatGPT needs a tunnel; the installer prints the steps.
+
+The script clones the toolkit into `~/.wp-docs-toolkit`, installs dependencies and Chromium, and registers the MCP
+server in Claude Desktop (merging into the existing config, with a backup) and in Claude Code. Re-run it to update.
+What it installs is documented in [packages/mcp](packages/mcp/README.md).
+
 ## Quick start: one screenshot, nothing to configure
 
 ```sh
