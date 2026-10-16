@@ -139,6 +139,7 @@ describe( 'annotations', () => {
 		const { tools } = await client.listTools();
 		const shot = tools.find( ( t ) => t.name === 'screenshot' );
 		assert.ok( shot.inputSchema.properties.annotate );
+		assert.ok( shot.inputSchema.properties.target );
 		assert.ok( shot.inputSchema.properties.include );
 		assert.ok( shot.inputSchema.properties.pad );
 	} );

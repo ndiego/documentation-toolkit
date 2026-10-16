@@ -274,6 +274,12 @@ export function createServer( options = {} ) {
 					.describe(
 						'Highlights drawn on the screenshot, anchored to UI elements so they stay correct. One type per image is the house style. Example: [ { "type": "arrow", "button": "Save draft", "from": "bottom" } ].'
 					),
+				target: z
+					.enum( TARGET_NAMES )
+					.optional()
+					.describe(
+						'Crop to this named region instead of the preset default, e.g. admin-content for a wp-admin screen without the menu and toolbar, or inspector, block-toolbar, top-bar.'
+					),
 				include: z
 					.array( z.enum( TARGET_NAMES ) )
 					.optional()
@@ -320,6 +326,11 @@ export function createServer( options = {} ) {
 					params,
 					alt: args.alt,
 					frame: args.frame,
+					target: args.target,
+					// admin-content is bordered by the menu and the admin bar; any padding drags them in.
+					pad:
+						args.pad ??
+						( args.target === 'admin-content' ? 0 : undefined ),
 					annotate: ( args.annotate || [] ).map( ( a ) =>
 						toSpecAnnotation(
 							a,
@@ -327,7 +338,6 @@ export function createServer( options = {} ) {
 						)
 					),
 					include: args.include,
-					pad: args.pad,
 					out: args.out,
 					session,
 					log: () => {},

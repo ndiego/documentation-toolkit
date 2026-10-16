@@ -179,6 +179,9 @@ async function portFor( config, options ) {
  */
 export function buildAdhocSpec( preset, params, id, alt, options = {} ) {
 	const capture = {};
+	if ( options.target ) {
+		capture.target = String( options.target );
+	}
 	if ( options.frame ) {
 		capture.frame = String( options.frame );
 	}

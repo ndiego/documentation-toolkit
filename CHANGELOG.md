@@ -5,6 +5,8 @@ All packages in this repository share one version. Consumers pin a tag.
 ## Unreleased
 
 - READMEs rewritten for npm readers: install from the registry first, the git checkout as the development path.
+- MCP: the `screenshot` tool takes `target` to crop to a named region (`admin-content` for a wp-admin screen
+  without the menu and toolbar, `inspector`, `block-toolbar`, …) instead of the preset's default.
 
 ## 0.3.3 (2026-10-16)
 
