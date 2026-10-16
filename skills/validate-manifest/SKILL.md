@@ -6,8 +6,8 @@ description: Validate a handbook manifest.json for the wporg-markdown importer o
 # Validate a handbook manifest
 
 Run: `npx wp-validate-manifest manifest.json --docs <repo root> [--frozen frozen-paths.json] [--strict]`
-(package `@wporg-docs/manifest`, no dependencies). In CI, use the composite action
-`ndiego/documentation-toolkit/actions/validate-manifest@<tag>` (same checks, same flags).
+(package `@wp-docs-toolkit/manifest`, no dependencies). In CI, use the composite action
+`ndiego/wp-docs-toolkit/actions/validate-manifest@<tag>` (same checks, same flags).
 
 ## What it enforces, and why
 

@@ -1,4 +1,4 @@
-# @wporg-docs/manifest
+# @wp-docs-toolkit/manifest
 
 `wp-validate-manifest` checks a `manifest.json` for the `wporg-markdown` importer used on developer.wordpress.org.
 The checks come from the importer's actual behaviour (`notes/theme-handbook-migration/research/02-pipeline-precedents.md`
@@ -31,7 +31,7 @@ parsed, or that is not a JSON object, exits 1 with a single `error:` line.
 ## Library
 
 ```js
-import { validateManifest } from '@wporg-docs/manifest';
+import { validateManifest } from '@wp-docs-toolkit/manifest';
 
 const { errors, warnings, entries } = validateManifest( manifest, {
 	docs: '.', // optional: enables the per-file checks
@@ -85,5 +85,5 @@ manifest from the file tree in CI as well and fail if the committed one is stale
 ## Tests
 
 ```
-npm test -w @wporg-docs/manifest
+npm test -w @wp-docs-toolkit/manifest
 ```

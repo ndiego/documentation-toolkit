@@ -1,4 +1,4 @@
-# Demo site (`@wporg-docs/demo-site`)
+# Demo site (`@wp-docs-toolkit/demo-site`)
 
 The WordPress Playground environment the documentation screenshots are taken in: a blueprint, a small mu-plugin
 that keeps wp-admin clean and deterministic, the Ipsum theme (the proposed WordPress 7.2 default, vendored), and a

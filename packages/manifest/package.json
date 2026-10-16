@@ -1,6 +1,6 @@
 {
-	"name": "@wporg-docs/manifest",
-	"version": "0.2.0",
+	"name": "@wp-docs-toolkit/manifest",
+	"version": "0.2.1",
 	"description": "Validates a handbook manifest.json for the wporg-markdown importer on developer.wordpress.org: path-keyed entries, parents first, no slug takeovers, GitHub blob sources, one H1 per file, no raw block markup.",
 	"keywords": [
 		"wordpress",
@@ -10,13 +10,13 @@
 		"wporg-markdown",
 		"validation"
 	],
-	"homepage": "https://github.com/ndiego/documentation-toolkit/tree/trunk/packages/manifest#readme",
+	"homepage": "https://github.com/ndiego/wp-docs-toolkit/tree/trunk/packages/manifest#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ndiego/documentation-toolkit.git",
+		"url": "git+https://github.com/ndiego/wp-docs-toolkit.git",
 		"directory": "packages/manifest"
 	},
-	"bugs": "https://github.com/ndiego/documentation-toolkit/issues",
+	"bugs": "https://github.com/ndiego/wp-docs-toolkit/issues",
 	"license": "GPL-2.0-or-later",
 	"type": "module",
 	"bin": {

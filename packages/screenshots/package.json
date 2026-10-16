@@ -1,6 +1,6 @@
 {
-	"name": "@wporg-docs/screenshots",
-	"version": "0.2.0",
+	"name": "@wp-docs-toolkit/screenshots",
+	"version": "0.2.1",
 	"description": "Reproducible WordPress UI screenshots for documentation: boots WordPress Playground from a blueprint and captures YAML-defined shots with Playwright.",
 	"keywords": [
 		"wordpress",
@@ -9,13 +9,13 @@
 		"playwright",
 		"playground"
 	],
-	"homepage": "https://github.com/ndiego/documentation-toolkit/tree/trunk/packages/screenshots#readme",
+	"homepage": "https://github.com/ndiego/wp-docs-toolkit/tree/trunk/packages/screenshots#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ndiego/documentation-toolkit.git",
+		"url": "git+https://github.com/ndiego/wp-docs-toolkit.git",
 		"directory": "packages/screenshots"
 	},
-	"bugs": "https://github.com/ndiego/documentation-toolkit/issues",
+	"bugs": "https://github.com/ndiego/wp-docs-toolkit/issues",
 	"license": "GPL-2.0-or-later",
 	"type": "module",
 	"bin": {
@@ -39,7 +39,7 @@
 		"@playwright/test": "1.64.0",
 		"@wordpress/e2e-test-utils-playwright": "3.0.0",
 		"@wp-playground/cli": "3.1.57",
-		"@wporg-docs/demo-site": "0.2.0",
+		"@wp-docs-toolkit/demo-site": "0.2.1",
 		"pixelmatch": "^8.0.0",
 		"sharp": "^0.34.0",
 		"yaml": "^2.8.0"

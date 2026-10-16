@@ -1,4 +1,4 @@
-# @wporg-docs/screenshots
+# @wp-docs-toolkit/screenshots
 
 Reproducible WordPress UI screenshots for documentation. A YAML file per article says what to show. The engine
 boots WordPress Playground from a committed blueprint (pinned WordPress and PHP, a theme, demo content), drives the
@@ -19,8 +19,8 @@ Until the package is on npm, depend on it as a path into a checkout of this repo
 
 ```sh
 # in the documentation repo
-git submodule add https://github.com/ndiego/documentation-toolkit.git toolkit
-( cd toolkit && git checkout v0.2.0 && npm ci )          # the engine's dependencies live in the toolkit checkout
+git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
+( cd toolkit && git checkout v0.2.1 && npm ci )          # the engine's dependencies live in the toolkit checkout
 ```
 
 ```json
@@ -30,7 +30,7 @@ git submodule add https://github.com/ndiego/documentation-toolkit.git toolkit
     "postinstall": "npm exec --prefix ../toolkit -- playwright install chromium"
   },
   "dependencies": {
-    "@wporg-docs/screenshots": "file:../toolkit/packages/screenshots"
+    "@wp-docs-toolkit/screenshots": "file:../toolkit/packages/screenshots"
   }
 }
 ```
@@ -56,7 +56,7 @@ wp-screenshots doctor | list | vocab
 
 `shoot` is the "just give me one" path: `wp-screenshots shoot --preset site-editor --out site-editor.webp`
 renders a single image from a preset without a spec file. It also needs no project: when no `shots.config.js` is
-found, `shoot` (and `doctor`, `presets`, `vocab`) fall back to the bundled demo site (`@wporg-docs/demo-site`)
+found, `shoot` (and `doctor`, `presets`, `vocab`) fall back to the bundled demo site (`@wp-docs-toolkit/demo-site`)
 with working files in the temp directory, so it runs from any directory once Chromium is installed
 (`npx playwright install chromium`).
 
@@ -232,6 +232,6 @@ add it), the engine uses it to assert the booted versions; otherwise it falls ba
 
 ```sh
 npm ci                       # at the repository root
-npm test -w @wporg-docs/screenshots
+npm test -w @wp-docs-toolkit/screenshots
 npm run lint                 # ESLint (WordPress config) and Prettier (wp-prettier)
 ```

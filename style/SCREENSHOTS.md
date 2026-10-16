@@ -1,7 +1,7 @@
 # Screenshot guidelines
 
 How documentation screenshots of WordPress are framed, annotated and written about, so that every image across
-every handbook reads as one system. The `@wporg-docs/screenshots` engine enforces the mechanical parts (ratios,
+every handbook reads as one system. The `@wp-docs-toolkit/screenshots` engine enforces the mechanical parts (ratios,
 stage, annotation style); the rest is judgment this page records. Example images come from
 `examples/block-editor-handbook/`, rendered by the engine from the specs there.
 

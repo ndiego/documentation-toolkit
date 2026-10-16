@@ -13,7 +13,7 @@ either side changes.
     shots/                          YAML shot specs, usually mirrored to the docs tree
   docs/                             the Markdown and the generated images the engine writes into
 
-@wporg-docs/screenshots             the ENGINE: this package, consumed from npm or as a path dependency
+@wp-docs-toolkit/screenshots             the ENGINE: this package, consumed from npm or as a path dependency
 ```
 
 The engine knows nothing about any repository. It receives a config object (directories, blueprint path,

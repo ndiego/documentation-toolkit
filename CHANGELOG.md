@@ -2,24 +2,27 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
-## Unreleased
+## 0.2.1 (2026-10-16)
 
+- **Renamed** from `documentation-toolkit` to `wp-docs-toolkit` (repository `ndiego/wp-docs-toolkit`; the old URL
+  redirects). The npm scope is `@wp-docs-toolkit` (was `@wporg-docs`) and the Claude Code plugin and marketplace
+  are `wp-docs-toolkit` (were `wporg-docs`). Binaries, config keys and the `wp_screenshots` REST key are unchanged.
 - Screenshots: zero-config `shoot`. With no `shots.config.js` in reach, `shoot`, `doctor`, `presets` and `vocab`
-  run against the bundled demo site with working files in the temp directory. `@wporg-docs/screenshots` now
-  depends on `@wporg-docs/demo-site`. A missing Chromium is reported with the install command instead of a stack
+  run against the bundled demo site with working files in the temp directory. `@wp-docs-toolkit/screenshots` now
+  depends on `@wp-docs-toolkit/demo-site`. A missing Chromium is reported with the install command instead of a stack
   trace. Root scripts `npm run setup` and `npm run shoot`.
 
 ## 0.2.0 (2026-10-16)
 
 Restructured as an npm workspaces monorepo focused on maintaining WordPress.org documentation.
 
-- `wp-shots/` is now `packages/screenshots/`, published as `@wporg-docs/screenshots` with the binary
+- `wp-shots/` is now `packages/screenshots/`, published as `@wp-docs-toolkit/screenshots` with the binary
   `wp-screenshots`. Renamed with it: the working directory `.wp-screenshots/`, the environment variable
   `WP_SCREENSHOTS_CANONICAL`, the REST index key `wp_screenshots` a demo mu-plugin may expose, and the Docker
   volume prefix.
 - `--docker` now installs the engine where it lives (the toolkit checkout when consumed as a path dependency)
   and uses that install's Playwright to fetch Chromium. Before, it assumed the old `engine/` layout.
-- The manifest validator is ported from Python to Node as `packages/manifest/` (`@wporg-docs/manifest`, binary
+- The manifest validator is ported from Python to Node as `packages/manifest/` (`@wp-docs-toolkit/manifest`, binary
   `wp-validate-manifest`, no dependencies). The composite action runs it without a Python setup step.
 - The HTML-to-Markdown converter facade moved back to wp-documentation-migration. Conversion is a one-time
   migration step, not maintenance, and its core was never in this repository.
@@ -40,7 +43,7 @@ Restructured as an npm workspaces monorepo focused on maintaining WordPress.org 
   a mirrored tree). `shotsDir` remains the fallback.
 - Screenshots: site editor scenes use the WordPress 6.8+ `?p=/…` routes (the styles view opened the index
   template before); `selectBlock` no longer leaves the inline formatting toolbar over blocks with a caption.
-- New package `@wporg-docs/demo-site`: the blueprint, mu-plugin and content pack moved here from the migration
+- New package `@wp-docs-toolkit/demo-site`: the blueprint, mu-plugin and content pack moved here from the migration
   repo, now on the Ipsum theme with a `block-image` showcase post.
 - New `style/SCREENSHOTS.md` guideline and `examples/block-editor-handbook/`, a sample project rendered end to end
   (Image, Gallery and Table blocks, the site editor).

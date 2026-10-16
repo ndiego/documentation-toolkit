@@ -1,5 +1,5 @@
 {
-	"name": "documentation-toolkit",
+	"name": "wp-docs-toolkit",
 	"private": true,
 	"description": "Tooling for writing and maintaining WordPress.org documentation: screenshot engine, manifest validator, conventions, and agent skills.",
 	"license": "GPL-2.0-or-later",

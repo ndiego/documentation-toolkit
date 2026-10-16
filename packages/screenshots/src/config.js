@@ -30,7 +30,7 @@ const DEFAULTS = {
  * Load `shots.config.js` (or the file given) and resolve every path against its directory.
  *
  * With `fallback`, a missing config is not an error: the engine runs against the bundled demo site
- * (`@wporg-docs/demo-site`) with output and working files in a temp directory, which is what makes
+ * (`@wp-docs-toolkit/demo-site`) with output and working files in a temp directory, which is what makes
  * `wp-screenshots shoot` work from any directory with nothing set up.
  * @param {string}  [configPath]
  * @param {Object}  [options]
@@ -96,7 +96,7 @@ export async function loadConfig( configPath, options = {} ) {
  */
 export function demoSiteConfig() {
 	const require = createRequire( import.meta.url );
-	const pkg = require.resolve( '@wporg-docs/demo-site/package.json' );
+	const pkg = require.resolve( '@wp-docs-toolkit/demo-site/package.json' );
 	const scratch = path.join( os.tmpdir(), 'wp-screenshots' );
 	return {
 		blueprint: path.join( path.dirname( pkg ), 'blueprint.json' ),

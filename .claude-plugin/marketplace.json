@@ -1,10 +1,10 @@
 {
-	"name": "wporg-docs",
+	"name": "wp-docs-toolkit",
 	"owner": { "name": "Nick Diego" },
 	"description": "Tooling and skills for WordPress.org documentation.",
 	"plugins": [
 		{
-			"name": "wporg-docs",
+			"name": "wp-docs-toolkit",
 			"source": "./",
 			"description": "Skills for writing and maintaining WordPress.org documentation: reproducible screenshots, handbook manifest validation, and the handbook cutover procedure."
 		}

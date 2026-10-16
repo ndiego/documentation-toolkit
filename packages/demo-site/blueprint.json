@@ -1,9 +1,9 @@
 {
 	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
 	"meta": {
-		"title": "wporg-docs demo site",
+		"title": "wp-docs-toolkit demo site",
 		"description": "Deterministic WordPress for documentation screenshots: pinned versions, the Ipsum theme (vendored, see themes/IPSUM.md), a clean wp-admin (mu-plugins/wp-screenshots-demo.php) and the demo content pack (content/). See README.md.",
-		"author": "documentation-toolkit"
+		"author": "wp-docs-toolkit"
 	},
 	"preferredVersions": {
 		"wp": "7.1.3",

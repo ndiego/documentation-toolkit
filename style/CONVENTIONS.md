@@ -11,7 +11,7 @@ not a style preference. Voice, grammar and terminology are the Docs team's style
 - **Manifest keyed by page path**, parents as path keys and listed before children. Bare slugs are ambiguous
   (the Theme Handbook reuses 7 slugs on 14 pages) and resolve only at the top level.
 - **A new page never reuses an existing slug.** The importer's slug fallback takes over the existing post and moves
-  it. The `@wporg-docs/manifest` validator (`wp-validate-manifest`) enforces this.
+  it. The `@wp-docs-toolkit/manifest` validator (`wp-validate-manifest`) enforces this.
 - **Explicit heading ids are carried as `{#id}`.** Deep links depend on them; the TOC block generates the rest with
   `sanitize_title` and `-2`, `-3` suffixes.
 - **Notices are GitHub alerts** (`[!NOTE]` info, `[!TIP]` tip, `[!WARNING]` warning, `[!CAUTION]` alert); the

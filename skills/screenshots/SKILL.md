@@ -1,11 +1,11 @@
 ---
 name: screenshots
-description: Produce or refresh reproducible WordPress UI screenshots for documentation with the @wporg-docs/screenshots engine (WordPress Playground + Playwright, YAML shot specs). Use when asked to add, update, check, or lint documentation screenshots, or when a WordPress release changes the UI.
+description: Produce or refresh reproducible WordPress UI screenshots for documentation with the @wp-docs-toolkit/screenshots engine (WordPress Playground + Playwright, YAML shot specs). Use when asked to add, update, check, or lint documentation screenshots, or when a WordPress release changes the UI.
 ---
 
 # Documentation screenshots
 
-The engine is the npm package `@wporg-docs/screenshots` (binary `wp-screenshots`). A documentation repo holds the
+The engine is the npm package `@wp-docs-toolkit/screenshots` (binary `wp-screenshots`). A documentation repo holds the
 project-specific parts: `shots.config.js`, a Playground `blueprint/`, and YAML specs under `shots/`. Read the
 engine's `README.md` (commands, spec format) and `ARCHITECTURE.md` (the contract between engine and project) in
 `packages/screenshots/` of the toolkit, and the project's own README for its paths and demo-site slugs.
