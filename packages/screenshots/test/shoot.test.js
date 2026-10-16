@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import YAML from 'yaml';
-import { buildAdhocSpec, expandHome } from '../src/shoot.js';
+import { buildAdhocSpec, expandHome, playwrightCliPath } from '../src/shoot.js';
 import { loadSpec } from '../src/spec.js';
 import { mergeStyle } from '../src/style.js';
 
@@ -66,5 +66,11 @@ describe( 'buildAdhocSpec', () => {
 		assert.equal( expandHome( '~' ), os.homedir() );
 		assert.equal( expandHome( '/abs/~/keep' ), '/abs/~/keep' );
 		assert.equal( expandHome( 'rel.webp' ), 'rel.webp' );
+	} );
+
+	it( 'resolves the Playwright CLI through a declared export', () => {
+		const cli = playwrightCliPath();
+		assert.ok( fs.existsSync( cli ), cli );
+		assert.match( cli, /cli\.js$/ );
 	} );
 } );

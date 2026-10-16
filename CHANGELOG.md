@@ -2,7 +2,11 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
-## Unreleased
+## 0.3.3 (2026-10-16)
+
+- Fix: the first screenshot on a machine without Chromium failed with `Package subpath './cli.js' is not defined by
+  "exports" in playwright/package.json`. The auto-install now resolves Playwright's CLI through a declared export
+  (`@playwright/test/cli`). Found on a colleague's first install from npm.
 
 - The `handbook-cutover` skill moved to wp-documentation-migration: a one-time migration procedure, not a utility.
 - 0.3.2 is the first version published to npm (`@wp-docs-toolkit/*`, 2026-10-16). The README's install line is now

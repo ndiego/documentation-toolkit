@@ -1,6 +1,6 @@
 {
 	"name": "@wp-docs-toolkit/demo-site",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "The WordPress Playground environment the documentation screenshots are taken in: pinned WordPress and PHP, the Ipsum theme, a clean wp-admin and a deterministic demo content pack with a per-block showcase.",
 	"keywords": [
 		"wordpress",

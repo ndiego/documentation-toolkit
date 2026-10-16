@@ -1,6 +1,6 @@
 {
 	"name": "@wp-docs-toolkit/manifest",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "Validates a handbook manifest.json for the wporg-markdown importer on developer.wordpress.org: path-keyed entries, parents first, no slug takeovers, GitHub blob sources, one H1 per file, no raw block markup.",
 	"keywords": [
 		"wordpress",

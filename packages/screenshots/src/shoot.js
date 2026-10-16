@@ -3,6 +3,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import YAML from 'yaml';
+import { createRequire } from 'node:module';
 import { presets, presetNames } from './presets.js';
 import { loadSpec } from './spec.js';
 import { runShots } from './runner.js';
@@ -18,10 +19,7 @@ export async function ensureChromium( options = {} ) {
 	if ( ( ! exe || ! fs.existsSync( exe ) ) && options.install ) {
 		// First run on a machine without the browser: fetch it (about 150 MB, a minute or two).
 		const { spawnSync } = await import( 'node:child_process' );
-		const { createRequire } = await import( 'node:module' );
-		const cli = createRequire( import.meta.url ).resolve(
-			'playwright/cli.js'
-		);
+		const cli = playwrightCliPath();
 		const result = spawnSync(
 			process.execPath,
 			[ cli, 'install', 'chromium' ],
@@ -213,4 +211,14 @@ export function expandHome( p ) {
 		return path.join( os.homedir(), p.slice( 2 ) );
 	}
 	return p;
+}
+
+/**
+ * Playwright's command-line entry point, resolved through an export the package actually declares.
+ * `playwright/cli.js` is not in the package's exports map (ERR_PACKAGE_PATH_NOT_EXPORTED on a fresh install);
+ * `@playwright/test/cli` is.
+ * @return {string} absolute path to the CLI script
+ */
+export function playwrightCliPath() {
+	return createRequire( import.meta.url ).resolve( '@playwright/test/cli' );
 }
