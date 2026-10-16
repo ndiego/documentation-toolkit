@@ -95,6 +95,29 @@ capture:
 A three-column gallery is wider than it is tall, so `auto` put it on the banner frame; the Image block above landed
 on 4:3. The same preset, two shapes, each on the ratio that suits it.
 
+## Annotation size
+
+An annotation is sized for the person reading the page, not for the pixels of the capture. A tight crop of the
+inspector is shown close to its natural size; a full-editor shot is 1440 CSS px wide and lands in a 960 px column,
+so the same 3 px outline would arrive at the reader's eye as 2 px, and a 40 px arrow as a smudge. The engine
+therefore scales every annotation by how far the capture exceeds the display column: a 1440 px capture gets
+1.5× strokes, arrows and badges; anything narrower than the column stays at the base size; the scale stops at
+2.5×. The reference column is `style.annotations.referenceWidth` (960, the Block Editor Handbook) and a shot can
+pin its own factor with `capture.annotationScale`.
+
+The scale is a safety net, not a design tool. When an annotation would need to be big to be seen, the crop is
+wrong for the point being made:
+
+- A small control in a wide screen wants a tighter subject (`block-settings` or `block-toolbar` instead of
+  `post-editor`; `admin-content` instead of `admin-screen`), not a bigger arrow.
+- A whole-screen shot carries at most one annotation, and that annotation should mark something large enough to
+  be found at a glance: a panel, a region, a primary button.
+- If the reader has to hunt for the highlight, crop; if they then lose the context, add a second image rather than
+  a louder annotation.
+
+Readers also see the image at every size between a phone and a wide monitor. The frame ratios keep images from
+collapsing on narrow screens; the annotation scale keeps the marks legible on the column they were designed for.
+
 ## Text in images
 
 Prefer as little text in an image as the subject allows. A screenshot of a toolbar has to show the toolbar's

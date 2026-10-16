@@ -2,6 +2,12 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
+## 0.3.2 (2026-10-16)
+
+- Screenshots: annotations are sized for the displayed image. The engine scales strokes, arrows and badges by the
+  capture width against `style.annotations.referenceWidth` (960, the handbook column), between 1× and 2.5×;
+  `capture.annotationScale` pins a shot's factor. `style/SCREENSHOTS.md` explains when to crop instead.
+
 ## 0.3.1 (2026-10-16)
 
 - MCP: the `screenshot` tool takes `annotate` (arrow, outline, badge, dim anchored to a named button, control, tab,

@@ -25,7 +25,9 @@ framing; override only what the request needs. `npx wp-screenshots presets` list
   missing it says so and gives the install command.
 
 Highlight with one annotation type per image: `outline` by default, `arrow` when the target is small or has
-lookalikes, numbered `badge` for enumerated steps, `dim` for noisy surroundings. Read `style/SCREENSHOTS.md` in the
+lookalikes, numbered `badge` for enumerated steps, `dim` for noisy surroundings. Annotations scale automatically
+for the displayed size; if a highlight would need to be large to be seen, crop tighter (a narrower preset or
+target) instead of relying on the scale. Read `style/SCREENSHOTS.md` in the
 toolkit for the frames, the annotation style and the text-in-images preference (minimal by default, "no text" or
 "full" on request).
 

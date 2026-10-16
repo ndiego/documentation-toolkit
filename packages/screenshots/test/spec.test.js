@@ -69,6 +69,7 @@ describe( 'loadSpec', () => {
 				pad: undefined,
 				frame: null,
 				annotate: [],
+				annotationScale: undefined,
 				mask: [],
 				fit: null,
 			},
@@ -1101,6 +1102,22 @@ describe( 'spec discovery with config.specs', () => {
 				( s ) => s.article
 			),
 			[ 'image' ]
+		);
+	} );
+} );
+
+describe( 'annotationScale', () => {
+	it( 'accepts a positive number and rejects anything else', () => {
+		const spec = load(
+			'article: a\nshots:\n  - id: x\n    alt: x\n    capture: { annotationScale: 1.5 }\n'
+		);
+		assert.equal( spec.shots[ 0 ].capture.annotationScale, 1.5 );
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    alt: x\n    capture: { annotationScale: 0 }\n'
+				),
+			/annotationScale must be a positive number/
 		);
 	} );
 } );

@@ -34,6 +34,7 @@ const CAPTURE_KEYS = [
 	'fit',
 	'frame',
 	'annotate',
+	'annotationScale',
 	'mask',
 ];
 const ANNOTATION_TYPES = [ 'outline', 'badge', 'arrow', 'dim' ];
@@ -399,9 +400,19 @@ function normaliseCapture( file, where, capture, config ) {
 		pad: capture.pad,
 		frame: capture.frame || null,
 		annotate,
+		annotationScale: capture.annotationScale,
 		mask,
 		fit: capture.fit || null,
 	};
+	if (
+		out.annotationScale !== undefined &&
+		( typeof out.annotationScale !== 'number' || out.annotationScale <= 0 )
+	) {
+		throw new SpecError(
+			file,
+			`${ where } capture: annotationScale must be a positive number (1 = the base size)`
+		);
+	}
 	if (
 		out.pad !== undefined &&
 		( typeof out.pad !== 'number' || out.pad < 0 )

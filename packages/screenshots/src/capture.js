@@ -3,6 +3,7 @@ import { resolveTarget, isFullViewport, waitForTarget } from './targets.js';
 import { resolveLocator } from './locators.js';
 import { applyAnnotations } from './annotate.js';
 import { encode, frameCard, stage } from './image.js';
+import { annotationScaleFor } from './style.js';
 
 /**
  * Park the pointer, wait for fonts, network and layout to settle.
@@ -121,10 +122,20 @@ export async function captureShot( ctx, shot ) {
 		}
 	}
 
+	// Size the annotations for how large this capture will be shown, from what we know before drawing them.
+	const vp0 = ctx.page.viewportSize();
+	const pad0 = capture.pad ?? style.pad;
+	const captureWidth =
+		! isFullViewport( targetName ) && boxes.length
+			? union( boxes ).width + pad0 * 2
+			: vp0.width;
+	const scale =
+		capture.annotationScale ?? annotationScaleFor( style, captureWidth );
 	const annotations = await applyAnnotations(
 		ctx,
 		capture.annotate,
-		targetLocator
+		targetLocator,
+		scale
 	);
 	boxes.push( ...annotations.boxes );
 

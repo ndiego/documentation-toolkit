@@ -20,7 +20,7 @@ Until the package is on npm, depend on it as a path into a checkout of this repo
 ```sh
 # in the documentation repo
 git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
-( cd toolkit && git checkout v0.3.1 && npm ci )          # the engine's dependencies live in the toolkit checkout
+( cd toolkit && git checkout v0.3.2 && npm ci )          # the engine's dependencies live in the toolkit checkout
 ```
 
 ```json
@@ -175,7 +175,8 @@ shots:
   `fit: content` trims a tall panel, `frame: card` puts a full-editor shot on a card.
 - **Annotations** anchor to elements, never to pixels: `outline`, `arrow` (with `from: top | bottom | left |
   right | top-left | …`), numbered `badge`, `dim`. WordPress blue with a white halo so they stay legible over the
-  editor's own selection outline.
+  editor's own selection outline. They scale with the capture's displayed size (`style.annotations`, or
+  `capture.annotationScale` per shot) so a full-editor shot's marks read as well as a tight crop's.
 - **Frames** put the crop on a stage with a canonical ratio: `wide` 16:9, `standard` 4:3, `portrait` 3:4,
   `banner` 3:1, `auto` (nearest to the content), `none`, or the content-sized `card`. The content is never scaled;
   the stage grows to the ratio. The manifest records the frame used.

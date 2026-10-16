@@ -64,7 +64,7 @@ repo, for example a git submodule at `toolkit/`:
 
 ```sh
 git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
-( cd toolkit && git checkout v0.3.1 && npm ci )
+( cd toolkit && git checkout v0.3.2 && npm ci )
 ```
 
 ```json
@@ -74,7 +74,7 @@ git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
 The engine's dependencies install at the toolkit root (`npm ci` there), not inside the package, because the repo is
 an npm workspace. Projects that install Chromium in a `postinstall` use `npm exec --prefix ../toolkit -- playwright install chromium`.
 
-**The action.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.3.1` with `manifest`, `docs`,
+**The action.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.3.2` with `manifest`, `docs`,
 optional `frozen`, `allow-missing-parent` and `strict` inputs.
 
 **The skills.** The repo is a Claude Code plugin and its own marketplace:

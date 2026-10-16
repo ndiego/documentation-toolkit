@@ -37,6 +37,10 @@ export const defaultStyle = {
 		radius: 8,
 		shadow: { blur: 28, offsetY: 10, color: 'rgba(31, 36, 61, 0.18)' },
 	},
+	// Annotations are sized for the reader, not the capture. A full-editor shot (1440 CSS px) is shown in a
+	// 960 px column, so its strokes and arrows are scaled up to stay as legible as on a tight crop; a crop
+	// narrower than the column keeps the base size (never scaled down).
+	annotations: { referenceWidth: 960, minScale: 1, maxScale: 2.5 },
 	// Accent: WordPress blue. The editor's own selection outline is the same blue, so annotations carry a white
 	// halo on both sides of the stroke to stay legible on top of it.
 	accent: '#3858e9',
@@ -151,4 +155,54 @@ export function resolveViewport( style, viewport = 'desktop' ) {
 		);
 	}
 	return found;
+}
+
+/**
+ * How much to enlarge annotations for a capture of the given CSS width so they read at display size.
+ * @param {Object} style
+ * @param {number} captureWidth CSS px the capture will span before the stage
+ * @return {number} multiplier, clamped to [minScale, maxScale]
+ */
+export function annotationScaleFor( style, captureWidth ) {
+	const { referenceWidth, minScale, maxScale } = style.annotations;
+	const raw = captureWidth / referenceWidth;
+	return Math.min( maxScale, Math.max( minScale, raw ) );
+}
+
+/**
+ * The annotation tokens multiplied by a scale (lengths, widths, sizes, the badge font size).
+ * @param {Object} style
+ * @param {number} scale
+ * @return {{outline: Object, badge: Object, arrow: Object, dim: Object}} scaled copies
+ */
+export function scaledAnnotationStyle( style, scale ) {
+	const mul = ( value ) => Math.round( value * scale * 100 ) / 100;
+	const halo = ( h ) => ( h ? { ...h, width: mul( h.width ) } : h );
+	return {
+		outline: {
+			...style.outline,
+			width: mul( style.outline.width ),
+			radius: mul( style.outline.radius ),
+			gap: mul( style.outline.gap ),
+			halo: halo( style.outline.halo ),
+		},
+		badge: {
+			...style.badge,
+			size: mul( style.badge.size ),
+			font: style.badge.font.replace(
+				/(\d+(?:\.\d+)?)px/,
+				( _, n ) => `${ mul( Number( n ) ) }px`
+			),
+			halo: halo( style.badge.halo ),
+		},
+		arrow: {
+			...style.arrow,
+			width: mul( style.arrow.width ),
+			length: mul( style.arrow.length ),
+			head: mul( style.arrow.head ),
+			gap: mul( style.arrow.gap ),
+			halo: halo( style.arrow.halo ),
+		},
+		dim: style.dim,
+	};
 }

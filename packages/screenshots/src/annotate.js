@@ -4,6 +4,7 @@
  */
 import { resolveLocator } from './locators.js';
 import { resolveTarget } from './targets.js';
+import { scaledAnnotationStyle } from './style.js';
 
 const OVERLAY_ID = 'wp-screenshots-overlay';
 
@@ -46,12 +47,19 @@ async function boxFor( ctx, annotation, targetLocator ) {
  * @param {Object}                                  ctx
  * @param {object[]}                                annotations   normalised { type, ...locatorKey }
  * @param {import('@playwright/test').Locator|null} targetLocator
+ * @param {number}                                  [scale]       size multiplier (see annotationScaleFor)
  */
-export async function applyAnnotations( ctx, annotations, targetLocator ) {
+export async function applyAnnotations(
+	ctx,
+	annotations,
+	targetLocator,
+	scale = 1
+) {
 	if ( ! annotations.length ) {
 		return { boxes: [], remove: async () => {} };
 	}
 	const style = ctx.style;
+	const tokens = scaledAnnotationStyle( style, scale );
 	const items = [];
 	let badgeCounter = 0;
 	for ( const a of annotations ) {
@@ -290,12 +298,7 @@ export async function applyAnnotations( ctx, annotations, targetLocator ) {
 		{
 			id: OVERLAY_ID,
 			items,
-			style: {
-				outline: style.outline,
-				badge: style.badge,
-				arrow: style.arrow,
-				dim: style.dim,
-			},
+			style: tokens,
 		}
 	);
 	return {

@@ -186,7 +186,7 @@ export function toSpecAnnotation( a, defaultWithin = null ) {
 export function createServer( options = {} ) {
 	const server = new McpServer( {
 		name: 'wp-docs-toolkit',
-		version: '0.3.1',
+		version: '0.3.2',
 	} );
 	const maxWidth = options.maxWidth ?? 1400;
 	const warm = options.warm || createWarmSession( options );
@@ -215,7 +215,7 @@ export function createServer( options = {} ) {
 		{
 			title: 'Take a WordPress screenshot',
 			description:
-				'Render a reproducible screenshot of the WordPress UI from a preset: it boots a pinned WordPress (7.1, the Ipsum theme, demo content), drives the real interface, crops to the subject and puts it on a canonical frame. Highlight things with `annotate` (an arrow or outline on a named button or control, numbered badges, or dimming). Returns the image inline; pass `out` to also save the WebP file on this machine. First call 15-30 seconds, then a few seconds. Use `list_presets` for the subjects. Block presets open a showcase post for the block (Image, Gallery and Table exist; set post to "new" for other blocks).',
+				'Render a reproducible screenshot of the WordPress UI from a preset: it boots a pinned WordPress (7.1, the Ipsum theme, demo content), drives the real interface, crops to the subject and puts it on a canonical frame. Highlight things with `annotate` (an arrow or outline on a named button or control, numbered badges, or dimming); annotations are sized for the displayed image automatically, so for a small control in a big screen prefer a tighter preset (block-settings, block-toolbar, admin-content region) over a bigger highlight. Returns the image inline; pass `out` to also save the WebP file on this machine. First call 15-30 seconds, then a few seconds. Use `list_presets` for the subjects. Block presets open a showcase post for the block (Image, Gallery and Table exist; set post to "new" for other blocks).',
 			inputSchema: {
 				preset: z
 					.enum( presetNames )

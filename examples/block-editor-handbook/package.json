@@ -7,6 +7,6 @@
 		"shots": "wp-screenshots"
 	},
 	"dependencies": {
-		"@wp-docs-toolkit/screenshots": "0.3.1"
+		"@wp-docs-toolkit/screenshots": "0.3.2"
 	}
 }

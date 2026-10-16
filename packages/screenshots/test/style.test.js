@@ -161,3 +161,25 @@ describe( 'resolveViewport', () => {
 		);
 	} );
 } );
+
+describe( 'annotation scale', () => {
+	it( 'grows with the capture width against the display column and never shrinks', async () => {
+		const { annotationScaleFor, scaledAnnotationStyle } =
+			await import( '../src/style.js' );
+		const style = mergeStyle();
+		assert.equal( annotationScaleFor( style, 300 ), 1 );
+		assert.equal( annotationScaleFor( style, 960 ), 1 );
+		assert.equal( annotationScaleFor( style, 1440 ), 1.5 );
+		assert.equal( annotationScaleFor( style, 9600 ), 2.5 );
+		const scaled = scaledAnnotationStyle( style, 2 );
+		assert.equal( scaled.outline.width, style.outline.width * 2 );
+		assert.equal( scaled.outline.halo.width, style.outline.halo.width * 2 );
+		assert.equal( scaled.arrow.length, style.arrow.length * 2 );
+		assert.equal( scaled.badge.size, style.badge.size * 2 );
+		assert.match( scaled.badge.font, /26px/ );
+		assert.equal( scaled.badge.color, style.badge.color );
+		assert.deepEqual( scaled.dim, style.dim );
+		// The originals are untouched.
+		assert.equal( style.outline.width, 3 );
+	} );
+} );
