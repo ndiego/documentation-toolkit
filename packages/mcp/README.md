@@ -7,8 +7,13 @@ asking in words.
 | Tool | What it does |
 |---|---|
 | `list_presets` | The subjects a screenshot can be taken of, with their parameters. |
-| `screenshot` | Render one subject from a preset (a block on the canvas, its toolbar or settings, the site editor, a wp-admin screen, the front end). Boots the bundled demo site (WordPress 7.1, the Ipsum theme, demo content), returns the image inline, and writes the WebP when given `out`. 15-30 seconds per image. |
+| `screenshot` | Render one subject from a preset (a block on the canvas, its toolbar or settings, the site editor, a wp-admin screen, the front end) against the bundled demo site (WordPress 7.1, the Ipsum theme, demo content). Returns the image inline and writes the WebP when given `out`. The first call boots WordPress and Chromium (10-20 s); later calls reuse them (a few seconds). |
+| `restart_environment` | Stop the warm WordPress session so the next screenshot boots a fresh site. |
 | `validate_manifest` | Check a `manifest.json` for the developer.wordpress.org importer, same checks as the CI action. |
+
+The WordPress session stays warm between calls and closes after ten minutes unused (`--idle <minutes>`, `0` to
+keep it forever). Content a screenshot creates is cleaned up after each call; a screenshot that changed site
+settings should be followed by `restart_environment`.
 
 Every call renders a local preview. Canonical pixels for committing still come from `wp-screenshots check --docker`
 in the documentation project; the tool says so in its result.

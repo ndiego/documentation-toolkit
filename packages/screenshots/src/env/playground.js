@@ -151,6 +151,7 @@ export async function startPlayground( opts ) {
 		baseURL,
 		bootMs,
 		versions,
+		alive: () => ! exited,
 		stop: async () => {
 			process.off( 'exit', onExit );
 			await stop();

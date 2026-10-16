@@ -8,6 +8,9 @@ All packages in this repository share one version. Consumers pin a tag.
   `list_presets` and `validate_manifest` tools, so Claude Desktop, Claude Code, ChatGPT and other MCP clients can
   take screenshots by asking. The repo's `.mcp.json` registers it for Claude Code. `shootPreset()` is now a library
   function of `@wp-docs-toolkit/screenshots` (the CLI's `shoot` uses it) and can pick a free Playground port.
+- Screenshots: sessions. `openSession()` boots Playground and the browser once and `runShots`/`shootPreset` accept
+  a `session` to reuse, so a long-lived caller pays the boot once. The MCP server keeps one warm session (idle
+  timeout `--idle`, default 10 minutes) and adds a `restart_environment` tool; a second screenshot takes seconds.
 
 ## 0.2.1 (2026-10-16)
 

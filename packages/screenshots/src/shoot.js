@@ -98,10 +98,8 @@ export async function shootPreset( config, options ) {
 		fs.writeFileSync( specFile, body + '\n' );
 		const adhoc = {
 			...config,
-			port:
-				options.port === 0
-					? await freePort( config.host )
-					: options.port || config.port,
+			// A warm session already owns a port and a blueprint; a one-off run may pick a free port.
+			port: await portFor( config, options ),
 			outDir: path.join( tmp, 'out' ),
 			workDir: path.join( tmp, 'work' ),
 			docsDir: null,
@@ -113,6 +111,7 @@ export async function shootPreset( config, options ) {
 			mode: 'run',
 			headed: Boolean( options.headed ),
 			log: options.log,
+			session: options.session,
 		} );
 		if ( summary.failed ) {
 			const failure = ( results || [] ).find( ( r ) => r.error );
@@ -148,4 +147,14 @@ export async function shootPreset( config, options ) {
 	} finally {
 		fs.rmSync( tmp, { recursive: true, force: true } );
 	}
+}
+
+async function portFor( config, options ) {
+	if ( options.session ) {
+		return options.session.config.port;
+	}
+	if ( options.port === 0 ) {
+		return freePort( config.host );
+	}
+	return options.port || config.port;
 }

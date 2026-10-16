@@ -1,13 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { blueprintForSuite } from './config.js';
 import { loadSpecs, filterSpecs } from './spec.js';
-import { startPlayground } from './env/playground.js';
-import { launchBrowser } from './browser.js';
-import { createSite } from './site.js';
+import { openSession } from './session.js';
 import { runScene } from './scenes.js';
 import { runSteps } from './actions.js';
 import { captureShot } from './capture.js';
@@ -37,14 +33,15 @@ const require = createRequire( import.meta.url );
  *               `update` to apply, and return the diff list. A dev session (pauseAt) stages under workDir/dev
  *               instead, so it never disturbs what a previous check staged.
  *
- * @param {Object}                        config
- * @param {Object}                        opts
- * @param {Object}                        [opts.filter]
- * @param {'run'|'check'}                 [opts.mode]
- * @param {boolean}                       [opts.headed]
- * @param {(msg:string)=>void}            [opts.log]
- * @param {{article:string, shot:string}} [opts.pauseAt] dev mode: pause after this shot's steps
- * @param {Object[]}                      [opts.specs]   specs to run instead of loading them from disk
+ * @param {Object}                         config
+ * @param {Object}                         opts
+ * @param {Object}                         [opts.filter]
+ * @param {'run'|'check'}                  [opts.mode]
+ * @param {boolean}                        [opts.headed]
+ * @param {(msg:string)=>void}             [opts.log]
+ * @param {{article:string, shot:string}}  [opts.pauseAt] dev mode: pause after this shot's steps
+ * @param {Object[]}                       [opts.specs]   specs to run instead of loading them from disk
+ * @param {import('./session.js').Session} [opts.session] an open session to reuse (not closed afterwards)
  */
 export async function runShots( config, opts = {} ) {
 	const {
@@ -92,61 +89,14 @@ export async function runShots( config, opts = {} ) {
 	const startedAll = Date.now();
 
 	for ( const [ suite, suiteSpecs ] of bySuite ) {
-		const blueprint = blueprintForSuite( config, suite );
-		const blueprintHash = hashFile( blueprint );
-		let env = null;
-		let browser = null;
-		let ctx = null;
-
-		const boot = async () => {
-			await teardown();
-			env = await startPlayground( {
-				blueprint,
-				host: config.host,
-				port: config.port,
-				wp: config.wordpress.version,
-				php: config.wordpress.php,
-				logFile: path.join(
-					config.workDir,
-					`playground-${ suite }.log`
-				),
-				log,
-			} );
-			browser = await launchBrowser( {
-				baseURL: env.baseURL,
-				style: config.style,
-				user: config.user,
-				headed,
-			} );
-			// First request: Playground's login step hands the browser its auth cookie, which the REST helpers
-			// (template lookups, cleanup) reuse. Without this, a run whose first shot uses {{media.*}} has no cookie.
-			await browser.page.goto( '/wp-admin/index.php' );
-			const site = createSite( {
-				baseURL: env.baseURL,
-				context: browser.context,
-			} );
-			ctx = {
-				...browser,
-				site,
-				style: config.style,
-				config,
-				log,
-				baseURL: env.baseURL,
-				versions: env.versions,
-			};
-		};
-		const teardown = async () => {
-			if ( browser ) {
-				await browser.close();
-				browser = null;
-			}
-			if ( env ) {
-				await env.stop();
-				env = null;
-			}
-		};
+		// A caller may hand in an open session for this suite (the MCP server keeps one warm); otherwise the run
+		// boots its own and closes it at the end.
+		const owned = ! ( opts.session && opts.session.suite === suite );
+		let session = owned ? null : opts.session;
 		const onSignal = async () => {
-			await teardown();
+			if ( owned ) {
+				await session?.close();
+			}
 			process.exit( 130 );
 		};
 		process.once( 'SIGINT', onSignal );
@@ -156,7 +106,11 @@ export async function runShots( config, opts = {} ) {
 		// rather than aborting the run (which would leave images on disk without manifest entries).
 		let aborted = null;
 		try {
-			await boot();
+			if ( owned ) {
+				session = await openSession( { config, suite, headed, log } );
+			} else {
+				await session.ensure();
+			}
 			for ( const [ specIndex, spec ] of suiteSpecs.entries() ) {
 				log( `\n${ spec.article } (${ spec.relPath })` );
 				for ( const [ shotIndex, shot ] of spec.shots.entries() ) {
@@ -164,6 +118,7 @@ export async function runShots( config, opts = {} ) {
 					const file = `${ spec.article }/${ shot.id }.${ ext }`;
 					const outFile = path.join( outDir, file );
 					const t0 = Date.now();
+					const ctx = session.ctx;
 					if ( shot.kind === 'clip' ) {
 						log(
 							`  ~ ${ shot.id }: clips are not supported yet (phase 5); skipped`
@@ -250,15 +205,15 @@ export async function runShots( config, opts = {} ) {
 								: captured.encoding,
 							pixelHash: pixelHash( raw ),
 							frame: captured.frame,
-							wordpress: env.versions.wordpress,
-							php: env.versions.php,
-							theme: env.versions.theme || null,
+							wordpress: session.env.versions.wordpress,
+							php: session.env.versions.php,
+							theme: session.env.versions.theme || null,
 							playwright: playwrightVersion,
-							chromium: browser.chromiumVersion,
+							chromium: session.browser.chromiumVersion,
 							platform: `${ process.platform }-${ process.arch }`,
 							canonical:
 								process.env.WP_SCREENSHOTS_CANONICAL === '1',
-							blueprintHash,
+							blueprintHash: session.blueprintHash,
 						};
 						let status;
 						if ( mode === 'run' ) {
@@ -394,7 +349,7 @@ export async function runShots( config, opts = {} ) {
 					if ( shot.isolated && moreToCome ) {
 						log( '  (isolated shot: rebooting Playground)' );
 						try {
-							await boot();
+							await session.reboot();
 						} catch ( e ) {
 							aborted = `Playground did not come back after isolated shot ${ shot.id }: ${ firstLine( e.message ) }`;
 							log( `  ✗ ${ aborted }` );
@@ -402,13 +357,15 @@ export async function runShots( config, opts = {} ) {
 					}
 				}
 				if ( ! aborted ) {
-					await ctx.site.cleanup( log );
+					await session.ctx.site.cleanup( log );
 				}
 			}
 		} finally {
 			process.off( 'SIGINT', onSignal );
 			process.off( 'SIGTERM', onSignal );
-			await teardown();
+			if ( owned ) {
+				await session?.close();
+			}
 		}
 	}
 
@@ -468,12 +425,4 @@ function icon( status ) {
 
 function firstLine( s ) {
 	return String( s ).split( '\n' )[ 0 ];
-}
-
-function hashFile( file ) {
-	return crypto
-		.createHash( 'sha256' )
-		.update( fs.readFileSync( file ) )
-		.digest( 'hex' )
-		.slice( 0, 16 );
 }

@@ -19,6 +19,7 @@ import {
 	presets,
 	presetNames,
 	shootPreset,
+	openSession,
 } from '@wp-docs-toolkit/screenshots';
 import { validateManifest } from '@wp-docs-toolkit/manifest';
 
@@ -46,6 +47,8 @@ export function createServer( options = {} ) {
 		version: '0.2.1',
 	} );
 	const maxWidth = options.maxWidth ?? 1400;
+	const warm = options.warm || createWarmSession( options );
+	server.closeSession = () => warm.close();
 
 	server.registerTool(
 		'list_presets',
@@ -136,9 +139,7 @@ export function createServer( options = {} ) {
 			},
 		},
 		async ( args ) => {
-			const config = await loadConfig( options.project, {
-				fallback: ! options.project,
-			} );
+			const { config, session } = await warm.get();
 			const params = {};
 			for ( const key of [
 				'block',
@@ -159,9 +160,10 @@ export function createServer( options = {} ) {
 				alt: args.alt,
 				frame: args.frame,
 				out: args.out,
-				port: 0,
+				session,
 				log: () => {},
 			} );
+			warm.touch();
 			const png = await sharp( result.buffer )
 				.resize( { width: maxWidth, withoutEnlargement: true } )
 				.png()
@@ -175,7 +177,7 @@ export function createServer( options = {} ) {
 				encoding: result.encoding,
 				file: result.file,
 				alt: result.alt,
-				note: 'Local preview render. Canonical pixels for committing come from `wp-screenshots check --docker` in the documentation project.',
+				note: 'Local preview render from a warm WordPress session (restart_environment resets it). Canonical pixels for committing come from `wp-screenshots check --docker` in the documentation project.',
 			};
 			return {
 				content: [
@@ -184,6 +186,27 @@ export function createServer( options = {} ) {
 						type: 'image',
 						data: png.toString( 'base64' ),
 						mimeType: 'image/png',
+					},
+				],
+			};
+		}
+	);
+
+	server.registerTool(
+		'restart_environment',
+		{
+			title: 'Restart the WordPress environment',
+			description:
+				'Shut down the warm WordPress session so the next screenshot boots a fresh, unmodified site. Use after a screenshot that changed site state, or if a screenshot came back wrong. The next screenshot takes 10-20 seconds longer.',
+			inputSchema: {},
+		},
+		async () => {
+			await warm.close();
+			return {
+				content: [
+					{
+						type: 'text',
+						text: 'Environment stopped. The next screenshot boots a fresh WordPress.',
 					},
 				],
 			};
@@ -272,4 +295,62 @@ export function describePresets() {
 			] )
 		),
 	} ) );
+}
+
+/**
+ * One WordPress session kept alive between tool calls, closed after `idleMs` without use (default 10 minutes)
+ * or when the process ends. Calls that arrive while a boot is in flight wait for it.
+ * @param {Object} [options]
+ * @param {string} [options.project] path to a shots.config.js
+ * @param {number} [options.idleMs]  idle timeout; 0 disables it
+ * @return {{get: () => Promise<{config: Object, session: Object}>, touch: () => void, close: () => Promise<void>}} the holder
+ */
+export function createWarmSession( options = {} ) {
+	const idleMs = options.idleMs ?? 10 * 60 * 1000;
+	let config = null;
+	let session = null;
+	let opening = null;
+	let timer = null;
+	const armIdle = () => {
+		if ( timer ) {
+			clearTimeout( timer );
+		}
+		if ( idleMs > 0 ) {
+			timer = setTimeout( () => close(), idleMs );
+			timer.unref?.();
+		}
+	};
+	const close = async () => {
+		if ( timer ) {
+			clearTimeout( timer );
+			timer = null;
+		}
+		const current = session;
+		session = null;
+		if ( current ) {
+			await current.close();
+		}
+	};
+	const get = async () => {
+		if ( ! config ) {
+			config = await loadConfig( options.project, {
+				fallback: ! options.project,
+			} );
+		}
+		if ( ! session ) {
+			if ( ! opening ) {
+				opening = openSession( { config, log: () => {} } ).finally(
+					() => {
+						opening = null;
+					}
+				);
+			}
+			session = await opening;
+		} else {
+			await session.ensure();
+		}
+		armIdle();
+		return { config, session };
+	};
+	return { get, touch: armIdle, close };
 }

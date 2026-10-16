@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -20,4 +21,17 @@ export function walk( dir ) {
 		}
 	}
 	return out;
+}
+
+/**
+ * sha256 of a file's bytes, shortened, for change detection.
+ * @param {string} file
+ * @return {string} 16 hex chars
+ */
+export function hashFile( file ) {
+	return crypto
+		.createHash( 'sha256' )
+		.update( fs.readFileSync( file ) )
+		.digest( 'hex' )
+		.slice( 0, 16 );
 }

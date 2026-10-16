@@ -23,14 +23,16 @@ before( async () => {
 
 after( async () => {
 	await client.close();
+	await server.closeSession();
 	await server.close();
 } );
 
 describe( 'wp-docs-toolkit MCP server', () => {
-	it( 'exposes the three tools', async () => {
+	it( 'exposes the four tools', async () => {
 		const { tools } = await client.listTools();
 		assert.deepEqual( tools.map( ( t ) => t.name ).sort(), [
 			'list_presets',
+			'restart_environment',
 			'screenshot',
 			'validate_manifest',
 		] );
@@ -92,5 +94,13 @@ describe( 'wp-docs-toolkit MCP server', () => {
 			arguments: { preset: 'nope' },
 		} );
 		assert.equal( result.isError, true );
+	} );
+
+	it( 'restart_environment is harmless when nothing is running', async () => {
+		const result = await client.callTool( {
+			name: 'restart_environment',
+			arguments: {},
+		} );
+		assert.match( result.content[ 0 ].text, /fresh WordPress/ );
 	} );
 } );
