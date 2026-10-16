@@ -2,6 +2,10 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
+## Unreleased
+
+- The `handbook-cutover` skill moved to wp-documentation-migration: a one-time migration procedure, not a utility.
+
 ## 0.3.2 (2026-10-16)
 
 - Screenshots: annotations are sized for the displayed image. The engine scales strokes, arrows and badges by the

@@ -15,7 +15,7 @@ pipeline and preview site live in that handbook's own repo.
 | `style/CONVENTIONS.md` | The Markdown conventions every handbook repo follows, derived from importer behaviour. | Read before writing or converting content; linked from each handbook's CONTRIBUTING. |
 | `style/SCREENSHOTS.md` | The screenshot guidelines: subjects and presets, the four canonical frames, annotation style, text in images, alt text. | Read before adding screenshots; the engine enforces the mechanical parts. |
 | `examples/block-editor-handbook/` | A slice of the Block Editor Handbook with specs next to the articles, rendered against the demo site. | The engine's integration fixture and the gallery for the guidelines. `cd` there and run `npx wp-screenshots run`. |
-| `skills/` | Claude Code skills: `screenshots`, `validate-manifest`, `handbook-cutover`. | Installed as the `wp-docs-toolkit` plugin (below) so agents follow the same procedures everywhere. |
+| `skills/` | Claude Code skills: `screenshots`, `validate-manifest`. | Installed as the `wp-docs-toolkit` plugin (below) so agents follow the same procedures everywhere. |
 
 Planned next: style enforcement (WordPress.org spelling, terminology and formatting as a Vale style package plus a
 skill that applies it). The Docs team style guide on make.wordpress.org/docs stays the source of truth; the toolkit
@@ -97,8 +97,8 @@ Or for one session without installing: `claude --plugin-dir path/to/wp-docs-tool
    every handbook's next import or render.
 5. Style and voice are the Docs team's style guide on make.wordpress.org/docs. `style/CONVENTIONS.md` is about what
    the importer and GitHub need, and links out for everything else. No third source of truth.
-6. Maintenance tooling only. One-time migration tooling (the HTML-to-Markdown converter) lives with the
-   migration, in wp-documentation-migration.
+6. Maintenance tooling only. One-time migration tooling (the HTML-to-Markdown converter, the handbook cutover
+   procedure) lives with the migration, in wp-documentation-migration.
 
 ## Development
 
