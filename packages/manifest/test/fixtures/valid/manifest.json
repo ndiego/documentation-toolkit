@@ -1,0 +1,16 @@
+{
+	"getting-started": {
+		"title": "Getting started",
+		"slug": "getting-started",
+		"parent": null,
+		"order": 1,
+		"markdown_source": "https://github.com/example/handbook/blob/trunk/docs/getting-started/README.md"
+	},
+	"getting-started/install": {
+		"title": "Install",
+		"slug": "install",
+		"parent": "getting-started",
+		"order": 1,
+		"markdown_source": "https://github.com/example/handbook/blob/trunk/docs/getting-started/install.md"
+	}
+}

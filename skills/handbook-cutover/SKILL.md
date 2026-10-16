@@ -5,14 +5,14 @@ description: Plan or execute the cutover of a WordPress.org handbook from wp-adm
 
 # Handbook cutover (wp-admin → GitHub source)
 
-Background and evidence: `notes/theme-handbook-migration/README.md` (plan) and its research reports. The failure to
+Background and evidence: the Theme Handbook migration plan and research reports in the wp-documentation-migration repo (`notes/theme-handbook-migration/`). The failure to
 avoid is `WordPress/developer-plugins-handbook`: a repo opened to contributors before the importer existed, with
 wp-admin left writable, so both sides diverged and 34 merged PRs never reached the site.
 
 ## Preconditions
 
 - The importer subclass is merged and deployed (it is inert until the manifest exists at the configured URL).
-- The repo's CI validates the manifest (`validate-handbook-manifest`), and the repo has not accepted content PRs yet.
+- The repo's CI validates the manifest (`validate-manifest`), and the repo has not accepted content PRs yet.
 - A Meta committer is lined up to run the first import and apply the editing lock. Nobody else can.
 - The manifest is keyed by the live permalink paths and the importer base matches the handbook's URL segment, so
   existing posts are adopted (expected first-run result: "created 0, updated N"). Drafts and private pages are

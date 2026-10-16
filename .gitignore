@@ -1,8 +1,11 @@
 # Dependencies
 node_modules/
 
-# wp-shots working files (logs, failures, check staging, reports) when the engine is run from here
-.wp-shots/
+# Screenshot engine working files (logs, failures, check staging, reports) when it is run from a project here
+.wp-screenshots/
+
+# Test scratch
+coverage/
 
 # OS and editor noise
 .DS_Store

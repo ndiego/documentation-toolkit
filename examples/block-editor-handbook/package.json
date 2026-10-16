@@ -1,0 +1,12 @@
+{
+	"name": "example-block-editor-handbook",
+	"private": true,
+	"description": "Example documentation project for the toolkit: articles with colocated screenshot specs, rendered against the demo site.",
+	"type": "module",
+	"scripts": {
+		"shots": "wp-screenshots"
+	},
+	"dependencies": {
+		"@wporg-docs/screenshots": "0.2.0"
+	}
+}

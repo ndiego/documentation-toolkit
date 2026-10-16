@@ -26,13 +26,14 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-node@v4
       with:
-        python-version: '3.12'
+        node-version: 24
     - shell: bash
+      # The validator has no dependencies, so it runs straight from the checked-out action without an install.
       run: |
         ARGS=("${{ inputs.manifest }}" --docs "${{ inputs.docs }}")
         if [ -n "${{ inputs.frozen }}" ]; then ARGS+=(--frozen "${{ inputs.frozen }}"); fi
         if [ -n "${{ inputs.allow-missing-parent }}" ]; then ARGS+=(--allow-missing-parent ${{ inputs.allow-missing-parent }}); fi
         if [ "${{ inputs.strict }}" = "true" ]; then ARGS+=(--strict); fi
-        python3 -I "${{ github.action_path }}/../../manifest/validate_manifest.py" "${ARGS[@]}"
+        node "${{ github.action_path }}/../../packages/manifest/src/cli.js" "${ARGS[@]}"

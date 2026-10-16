@@ -1,0 +1,154 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "wporg-docs demo site",
+		"description": "Deterministic WordPress for documentation screenshots: pinned versions, the Ipsum theme (vendored, see themes/IPSUM.md), a clean wp-admin (mu-plugins/wp-screenshots-demo.php) and the demo content pack (content/). See README.md.",
+		"author": "documentation-toolkit"
+	},
+	"preferredVersions": {
+		"wp": "7.1.3",
+		"php": "8.3"
+	},
+	"features": {
+		"networking": false
+	},
+	"landingPage": "/wp-admin/",
+	"steps": [
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "Saltmarsh",
+				"blogdescription": "Field notes on slow travel, coast paths and the places in between",
+				"timezone_string": "UTC",
+				"date_format": "F j, Y",
+				"time_format": "g:i a",
+				"permalink_structure": "/%postname%/",
+				"show_on_front": "posts",
+				"fresh_site": 0,
+				"admin_email_lifespan": 4102444800,
+				"blog_public": 0
+			}
+		},
+		{
+			"step": "unzip",
+			"zipFile": {
+				"resource": "bundled",
+				"path": "themes/ipsum.zip"
+			},
+			"extractToPath": "/wordpress/wp-content/themes"
+		},
+		{
+			"step": "activateTheme",
+			"themeFolderName": "ipsum"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-load.php'; global $wpdb; update_user_meta( 1, $wpdb->get_blog_prefix() . 'persisted_preferences', array( 'core/edit-post' => array( 'welcomeGuide' => false, 'fullscreenMode' => true ), 'core' => array( 'welcomeGuide' => false, 'enableChoosePatternModal' => false ), 'core/edit-site' => array( 'welcomeGuide' => false, 'welcomeGuideStyles' => false, 'welcomeGuidePage' => false, 'welcomeGuideTemplate' => false ), '_modified' => '2026-01-01T00:00:00.000Z' ) );"
+		},
+		{
+			"step": "mkdir",
+			"path": "/wordpress/wp-content/mu-plugins"
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/wp-screenshots-demo.php",
+			"data": {
+				"resource": "bundled",
+				"path": "mu-plugins/wp-screenshots-demo.php"
+			}
+		},
+		{
+			"step": "mkdir",
+			"path": "/tmp/wp-screenshots-content/media"
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/seed.php",
+			"data": {
+				"resource": "bundled",
+				"path": "content/seed.php"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/hero.jpg",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/hero.jpg"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/landscape-1.jpg",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/landscape-1.jpg"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/landscape-2.jpg",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/landscape-2.jpg"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/landscape-3.jpg",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/landscape-3.jpg"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/portrait-1.jpg",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/portrait-1.jpg"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/square-1.jpg",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/square-1.jpg"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/site-logo.png",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/site-logo.png"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/site-icon.png",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/site-icon.png"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/tmp/wp-screenshots-content/media/avatar-default.png",
+			"data": {
+				"resource": "bundled",
+				"path": "content/media/avatar-default.png"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-load.php'; require '/tmp/wp-screenshots-content/seed.php';"
+		}
+	]
+}

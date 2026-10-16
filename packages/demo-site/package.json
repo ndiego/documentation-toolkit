@@ -1,0 +1,33 @@
+{
+	"name": "@wporg-docs/demo-site",
+	"version": "0.2.0",
+	"description": "The WordPress Playground environment the documentation screenshots are taken in: pinned WordPress and PHP, the Ipsum theme, a clean wp-admin and a deterministic demo content pack with a per-block showcase.",
+	"keywords": [
+		"wordpress",
+		"documentation",
+		"screenshots",
+		"playground",
+		"blueprint"
+	],
+	"homepage": "https://github.com/ndiego/documentation-toolkit/tree/trunk/packages/demo-site#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ndiego/documentation-toolkit.git",
+		"directory": "packages/demo-site"
+	},
+	"bugs": "https://github.com/ndiego/documentation-toolkit/issues",
+	"license": "GPL-2.0-or-later",
+	"files": [
+		"blueprint.json",
+		"content",
+		"mu-plugins",
+		"themes",
+		"README.md"
+	],
+	"scripts": {
+		"test": "node --test test/*.test.js"
+	},
+	"devDependencies": {
+		"@playwright/test": "1.64.0"
+	}
+}

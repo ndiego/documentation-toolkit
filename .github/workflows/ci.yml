@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [trunk]
+  pull_request:
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test
+      - name: Validate the skills and plugin manifest
+        run: node scripts/check-skills.js
+      - name: Lint the example project's specs and references (no browser)
+        working-directory: examples/block-editor-handbook
+        run: npx wp-screenshots lint
+
+  action:
+    name: validate-manifest action self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the action against its own fixture
+        uses: ./actions/validate-manifest
+        with:
+          manifest: packages/manifest/test/fixtures/valid/manifest.json
+          docs: packages/manifest/test/fixtures/valid
+          strict: 'true'

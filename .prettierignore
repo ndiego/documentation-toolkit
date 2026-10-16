@@ -1,0 +1,7 @@
+node_modules/
+package-lock.json
+*.md
+*.yml
+*.yaml
+# engine output
+**/docs/assets/screenshots/manifest.json

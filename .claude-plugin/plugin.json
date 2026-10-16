@@ -1,0 +1,10 @@
+{
+	"name": "wporg-docs",
+	"version": "0.2.0",
+	"description": "Skills for writing and maintaining WordPress.org documentation: reproducible screenshots, handbook manifest validation, and the handbook cutover procedure.",
+	"author": { "name": "Nick Diego" },
+	"homepage": "https://github.com/ndiego/documentation-toolkit",
+	"repository": "https://github.com/ndiego/documentation-toolkit",
+	"license": "GPL-2.0-or-later",
+	"keywords": [ "wordpress", "documentation", "screenshots", "handbook" ]
+}
