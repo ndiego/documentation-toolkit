@@ -2,6 +2,12 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
+## 0.3.1 (2026-10-16)
+
+- MCP: the `screenshot` tool takes `annotate` (arrow, outline, badge, dim anchored to a named button, control, tab,
+  menu item, link, text, selector or region; names match loosely unless `exact`), `include` and `pad`. `out`
+  expands a leading `~`. Found by a colleague's first prompt, "add an arrow on the Save Draft button".
+
 ## 0.3.0 (2026-10-16)
 
 - MCP: `wp-docs-mcp install` / `uninstall` register and remove the server in Claude Desktop and Claude Code with

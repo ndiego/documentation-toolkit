@@ -34,6 +34,147 @@ const FRAMES = [
 	'card',
 ];
 
+const DIRECTIONS = [
+	'top',
+	'bottom',
+	'left',
+	'right',
+	'top-left',
+	'top-right',
+	'bottom-left',
+	'bottom-right',
+];
+const TARGET_NAMES = [
+	'editor',
+	'canvas',
+	'selected-block',
+	'block-toolbar',
+	'inspector',
+	'document-sidebar',
+	'inserter',
+	'list-view',
+	'top-bar',
+	'options-menu',
+	'popover',
+	'modal',
+	'site-editor-sidebar',
+	'site-editor-canvas',
+	'admin-content',
+	'admin-screen',
+	'admin-menu',
+	'front',
+];
+
+// Where a preset's annotations look for their element unless told otherwise.
+const ANNOTATION_SCOPE = {
+	'block-toolbar': 'block-toolbar',
+	'block-settings': 'inspector',
+};
+
+// One annotation as a client states it: what to draw, and which element (by its accessible name) to anchor to.
+const annotationSchema = z.object( {
+	type: z
+		.enum( [ 'outline', 'arrow', 'badge', 'dim' ] )
+		.describe(
+			'outline (default choice), arrow (small or ambiguous targets), badge (numbered steps), dim (fade everything else).'
+		),
+	button: z
+		.string()
+		.optional()
+		.describe(
+			'Accessible name of a button, e.g. "Save draft", "Replace".'
+		),
+	control: z
+		.string()
+		.optional()
+		.describe(
+			'Label of a form control (textbox, select, checkbox, slider), e.g. "Resolution".'
+		),
+	menuitem: z.string().optional().describe( 'Name of a menu item.' ),
+	tab: z.string().optional().describe( 'Name of a tab.' ),
+	link: z.string().optional().describe( 'Name of a link.' ),
+	text: z.string().optional().describe( 'Visible text to anchor to.' ),
+	selector: z
+		.string()
+		.optional()
+		.describe( 'CSS selector, when nothing else fits.' ),
+	target: z
+		.enum( TARGET_NAMES )
+		.optional()
+		.describe(
+			'A named region instead of an element (for dim, or to outline a whole panel).'
+		),
+	exact: z
+		.boolean()
+		.optional()
+		.describe(
+			'Match the whole accessible name, case-sensitively. Default false here: a substring, case-insensitive, so "Save Draft" finds "Save draft".'
+		),
+	within: z
+		.enum( TARGET_NAMES )
+		.optional()
+		.describe(
+			'Limit the search to a named region, e.g. block-toolbar or top-bar.'
+		),
+	from: z
+		.enum( DIRECTIONS )
+		.optional()
+		.describe(
+			'Arrow only: the direction it comes from (default top-right). Point at toolbar buttons from bottom or the side.'
+		),
+	label: z
+		.string()
+		.optional()
+		.describe(
+			'Badge only: the number or letter to show (default: counts up).'
+		),
+	position: z
+		.enum( [ 'top-left', 'top-right', 'bottom-left', 'bottom-right' ] )
+		.optional()
+		.describe( 'Badge only: which corner of the element.' ),
+} );
+
+/**
+ * Translate a client annotation into the engine's spec form: `{ arrow: { button: 'Save draft', exact: false } }`.
+ * @param {Object}      a
+ * @param {string|null} [defaultWithin] region to search in when the annotation names none
+ * @return {Object} spec annotation
+ */
+export function toSpecAnnotation( a, defaultWithin = null ) {
+	const { type, exact, ...rest } = a;
+	if (
+		defaultWithin &&
+		rest.within === undefined &&
+		rest.target === undefined
+	) {
+		// Search the preset's own region first: "Options" exists in the block toolbar and in the top bar.
+		rest.within = defaultWithin;
+	}
+	const value = {};
+	for ( const [ key, v ] of Object.entries( rest ) ) {
+		if ( v !== undefined && v !== null && v !== '' ) {
+			value[ key ] = v;
+		}
+	}
+	const hasAnchor = [
+		'button',
+		'control',
+		'menuitem',
+		'tab',
+		'link',
+		'text',
+		'selector',
+		'target',
+	].some( ( k ) => value[ k ] !== undefined );
+	if ( ! hasAnchor ) {
+		return { [ type ]: 'self' };
+	}
+	if ( value.target === undefined && value.selector === undefined ) {
+		value.exact = exact === true;
+	}
+	return { [ type ]: value };
+}
+
 /**
  * Build the server. `options.project` points at a shots.config.js to render against a documentation project's
  * own demo site instead of the bundled one.
@@ -45,7 +186,7 @@ const FRAMES = [
 export function createServer( options = {} ) {
 	const server = new McpServer( {
 		name: 'wp-docs-toolkit',
-		version: '0.3.0',
+		version: '0.3.1',
 	} );
 	const maxWidth = options.maxWidth ?? 1400;
 	const warm = options.warm || createWarmSession( options );
@@ -74,7 +215,7 @@ export function createServer( options = {} ) {
 		{
 			title: 'Take a WordPress screenshot',
 			description:
-				'Render a reproducible screenshot of the WordPress UI from a preset: it boots a pinned WordPress (7.1, the Ipsum theme, demo content), drives the real interface, crops to the subject and puts it on a canonical frame. Returns the image inline; pass `out` to also save the WebP file. Takes 15-30 seconds. Use `list_presets` for the subjects. Block presets open a showcase post for the block (Image, Gallery and Table exist; set post to "new" for other blocks).',
+				'Render a reproducible screenshot of the WordPress UI from a preset: it boots a pinned WordPress (7.1, the Ipsum theme, demo content), drives the real interface, crops to the subject and puts it on a canonical frame. Highlight things with `annotate` (an arrow or outline on a named button or control, numbered badges, or dimming). Returns the image inline; pass `out` to also save the WebP file on this machine. First call 15-30 seconds, then a few seconds. Use `list_presets` for the subjects. Block presets open a showcase post for the block (Image, Gallery and Table exist; set post to "new" for other blocks).',
 			inputSchema: {
 				preset: z
 					.enum( presetNames )
@@ -127,6 +268,24 @@ export function createServer( options = {} ) {
 					.describe(
 						'Override the frame: auto, wide (16:9), standard (4:3), portrait (3:4), banner (3:1), none, card.'
 					),
+				annotate: z
+					.array( annotationSchema )
+					.optional()
+					.describe(
+						'Highlights drawn on the screenshot, anchored to UI elements so they stay correct. One type per image is the house style. Example: [ { "type": "arrow", "button": "Save draft", "from": "bottom" } ].'
+					),
+				include: z
+					.array( z.enum( TARGET_NAMES ) )
+					.optional()
+					.describe(
+						'Extra named regions to keep inside the crop, e.g. [ "block-toolbar" ].'
+					),
+				pad: z
+					.number()
+					.optional()
+					.describe(
+						'Padding around the crop in CSS pixels (preset default otherwise).'
+					),
 				alt: z
 					.string()
 					.optional()
@@ -135,7 +294,7 @@ export function createServer( options = {} ) {
 					.string()
 					.optional()
 					.describe(
-						'File path to write the WebP image to. Omit to only get the image inline.'
+						'File path to write the WebP image to, on the machine running this server (a leading ~ is expanded). Omit to only get the image inline.'
 					),
 			},
 		},
@@ -161,6 +320,14 @@ export function createServer( options = {} ) {
 					params,
 					alt: args.alt,
 					frame: args.frame,
+					annotate: ( args.annotate || [] ).map( ( a ) =>
+						toSpecAnnotation(
+							a,
+							ANNOTATION_SCOPE[ args.preset ] || null
+						)
+					),
+					include: args.include,
+					pad: args.pad,
 					out: args.out,
 					session,
 					log: () => {},
@@ -176,6 +343,7 @@ export function createServer( options = {} ) {
 				width: result.width,
 				height: result.height,
 				frame: result.frame,
+				annotations: ( args.annotate || [] ).length,
 				encoding: result.encoding,
 				file: result.file,
 				alt: result.alt,

@@ -7,7 +7,7 @@ asking in words.
 | Tool | What it does |
 |---|---|
 | `list_presets` | The subjects a screenshot can be taken of, with their parameters. |
-| `screenshot` | Render one subject from a preset (a block on the canvas, its toolbar or settings, the site editor, a wp-admin screen, the front end) against the bundled demo site (WordPress 7.1, the Ipsum theme, demo content). Returns the image inline and writes the WebP when given `out`. The first call boots WordPress and Chromium (10-20 s); later calls reuse them (a few seconds). |
+| `screenshot` | Render one subject from a preset, optionally with annotations (`annotate`: an arrow or outline on a named button or control, numbered badges, dimming), extra regions in the crop (`include`) and `pad` (a block on the canvas, its toolbar or settings, the site editor, a wp-admin screen, the front end) against the bundled demo site (WordPress 7.1, the Ipsum theme, demo content). Returns the image inline and writes the WebP when given `out`. The first call boots WordPress and Chromium (10-20 s); later calls reuse them (a few seconds). |
 | `restart_environment` | Stop the warm WordPress session so the next screenshot boots a fresh site. |
 
 Screenshot calls are serialized on the one warm session; concurrent requests wait their turn. If Chromium is missing on
@@ -116,6 +116,8 @@ node packages/mcp/src/cli.js --project /path/to/docs-repo/screenshots/shots.conf
 - "Show me the Image block's Styles tab in the block inspector."
 - "Give me the site editor's Styles view, wide."
 - "Screenshot the Plugins screen in wp-admin and save it to ~/Desktop/plugins.webp."
+- "Take a screenshot of the post editor with an arrow on the Save draft button."
+- "The Image block's Settings tab with the Resolution control outlined."
 - "Validate docs/manifest.json against the docs folder."
 
 ## Development

@@ -20,7 +20,7 @@ Until the package is on npm, depend on it as a path into a checkout of this repo
 ```sh
 # in the documentation repo
 git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
-( cd toolkit && git checkout v0.3.0 && npm ci )          # the engine's dependencies live in the toolkit checkout
+( cd toolkit && git checkout v0.3.1 && npm ci )          # the engine's dependencies live in the toolkit checkout
 ```
 
 ```json

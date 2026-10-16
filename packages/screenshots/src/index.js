@@ -11,6 +11,12 @@ export { resolveLocator } from './locators.js';
 export { runScene, sceneNames } from './scenes.js';
 export { captureShot, settle } from './capture.js';
 export { defaultStyle, mergeStyle } from './style.js';
-export { shootPreset, ensureChromium, freePort } from './shoot.js';
+export {
+	shootPreset,
+	ensureChromium,
+	freePort,
+	buildAdhocSpec,
+	expandHome,
+} from './shoot.js';
 export { presets, presetNames, expandPreset } from './presets.js';
 export { openSession, Session } from './session.js';

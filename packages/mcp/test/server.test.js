@@ -104,3 +104,73 @@ describe( 'wp-docs-toolkit MCP server', () => {
 		assert.match( result.content[ 0 ].text, /fresh WordPress/ );
 	} );
 } );
+
+describe( 'annotations', () => {
+	it( 'translate client annotations into spec form with fuzzy names by default', async () => {
+		const { toSpecAnnotation } = await import( '../src/server.js' );
+		assert.deepEqual(
+			toSpecAnnotation( {
+				type: 'arrow',
+				button: 'Save Draft',
+				from: 'bottom',
+			} ),
+			{ arrow: { button: 'Save Draft', from: 'bottom', exact: false } }
+		);
+		assert.deepEqual(
+			toSpecAnnotation( {
+				type: 'outline',
+				control: 'Resolution',
+				exact: true,
+			} ),
+			{ outline: { control: 'Resolution', exact: true } }
+		);
+		assert.deepEqual(
+			toSpecAnnotation( { type: 'dim', target: 'inspector' } ),
+			{
+				dim: { target: 'inspector' },
+			}
+		);
+		assert.deepEqual( toSpecAnnotation( { type: 'outline' } ), {
+			outline: 'self',
+		} );
+	} );
+
+	it( 'exposes annotate, include and pad on the screenshot tool', async () => {
+		const { tools } = await client.listTools();
+		const shot = tools.find( ( t ) => t.name === 'screenshot' );
+		assert.ok( shot.inputSchema.properties.annotate );
+		assert.ok( shot.inputSchema.properties.include );
+		assert.ok( shot.inputSchema.properties.pad );
+	} );
+
+	it( 'scopes annotations to the preset region unless told otherwise', async () => {
+		const { toSpecAnnotation } = await import( '../src/server.js' );
+		assert.deepEqual(
+			toSpecAnnotation(
+				{ type: 'badge', button: 'Options' },
+				'block-toolbar'
+			),
+			{
+				badge: {
+					button: 'Options',
+					within: 'block-toolbar',
+					exact: false,
+				},
+			}
+		);
+		assert.deepEqual(
+			toSpecAnnotation(
+				{ type: 'badge', button: 'Options', within: 'top-bar' },
+				'block-toolbar'
+			),
+			{ badge: { button: 'Options', within: 'top-bar', exact: false } }
+		);
+		assert.deepEqual(
+			toSpecAnnotation(
+				{ type: 'dim', target: 'inspector' },
+				'block-toolbar'
+			),
+			{ dim: { target: 'inspector' } }
+		);
+	} );
+} );

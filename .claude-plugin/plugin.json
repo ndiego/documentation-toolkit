@@ -1,6 +1,6 @@
 {
 	"name": "wp-docs-toolkit",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Skills for writing and maintaining WordPress.org documentation: reproducible screenshots, handbook manifest validation, and the handbook cutover procedure.",
 	"author": {
 		"name": "Nick Diego"

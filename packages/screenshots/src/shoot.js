@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import YAML from 'yaml';
 import { presets, presetNames } from './presets.js';
 import { loadSpec } from './spec.js';
 import { runShots } from './runner.js';
@@ -102,22 +103,10 @@ export async function shootPreset( config, options ) {
 	);
 	try {
 		const specFile = path.join( tmp, 'shoot.yaml' );
-		const body = [
-			'article: adhoc',
-			'shots:',
-			`  - id: ${ JSON.stringify( id ) }`,
-			`    preset: ${ name }`,
-			`    alt: ${ JSON.stringify( alt ) }`,
-			...Object.entries( params ).map(
-				( [ k, v ] ) => `    ${ k }: ${ JSON.stringify( v ) }`
-			),
-			...( options.frame
-				? [
-						`    capture: { frame: ${ JSON.stringify( String( options.frame ) ) } }`,
-					]
-				: [] ),
-		].join( '\n' );
-		fs.writeFileSync( specFile, body + '\n' );
+		const body = YAML.stringify(
+			buildAdhocSpec( name, params, id, alt, options )
+		);
+		fs.writeFileSync( specFile, body );
 		const adhoc = {
 			...config,
 			// A warm session already owns a port and a blueprint; a one-off run may pick a free port.
@@ -152,7 +141,7 @@ export async function shootPreset( config, options ) {
 		).shots[ `adhoc/${ id }` ];
 		let file = null;
 		if ( options.out ) {
-			file = path.resolve( String( options.out ) );
+			file = path.resolve( expandHome( String( options.out ) ) );
 			fs.mkdirSync( path.dirname( file ), { recursive: true } );
 			fs.copyFileSync( produced, file );
 		}
@@ -179,4 +168,49 @@ async function portFor( config, options ) {
 		return freePort( config.host );
 	}
 	return options.port || config.port;
+}
+
+/**
+ * The one-shot spec document `shoot` renders, as plain data (serialised to YAML and validated by loadSpec).
+ * @param {string} preset
+ * @param {Object} params
+ * @param {string} id
+ * @param {string} alt
+ * @param {Object} options frame, annotate, include, pad
+ * @return {Object} spec data
+ */
+export function buildAdhocSpec( preset, params, id, alt, options = {} ) {
+	const capture = {};
+	if ( options.frame ) {
+		capture.frame = String( options.frame );
+	}
+	if ( options.annotate?.length ) {
+		capture.annotate = options.annotate;
+	}
+	if ( options.include?.length ) {
+		capture.include = options.include;
+	}
+	if ( options.pad !== undefined && options.pad !== null ) {
+		capture.pad = Number( options.pad );
+	}
+	const shot = { id, preset, alt, ...params };
+	if ( Object.keys( capture ).length ) {
+		shot.capture = capture;
+	}
+	return { article: 'adhoc', shots: [ shot ] };
+}
+
+/**
+ * Expand a leading `~` the way a shell would; Node does not.
+ * @param {string} p
+ * @return {string} path
+ */
+export function expandHome( p ) {
+	if ( p === '~' ) {
+		return os.homedir();
+	}
+	if ( p.startsWith( '~/' ) || p.startsWith( '~\\' ) ) {
+		return path.join( os.homedir(), p.slice( 2 ) );
+	}
+	return p;
 }
