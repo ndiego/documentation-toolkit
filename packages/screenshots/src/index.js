@@ -34,6 +34,15 @@ export {
 	expandHome,
 } from './shoot.js';
 export { presets, presetNames, expandPreset } from './presets.js';
+export {
+	runSetup,
+	setupDocs,
+	setupOps,
+	validateSetupOp,
+	linkNote,
+	OPTION_NAMES,
+} from './setup.js';
+export { fixtures, fixtureNames } from './fixtures.js';
 export { openSession, Session } from './session.js';
 export {
 	isSupportedNode,
@@ -45,3 +54,11 @@ export {
 	NODE_MIN,
 	NODE_MAX_MAJOR,
 } from './runtime.js';
+export {
+	inspectShot,
+	INSPECT_ROLES,
+	WITHIN_REGIONS,
+	parseAriaLine,
+	finishElements,
+	truncateSnapshot,
+} from './inspect.js';

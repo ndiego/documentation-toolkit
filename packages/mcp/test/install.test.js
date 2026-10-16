@@ -31,7 +31,14 @@ describe( 'install', () => {
 
 	it( 'puts the chosen Node first on the launch PATH, once', () => {
 		const d = path.delimiter;
-		const base = [ '/usr/bin', '/x/bin', '', '/bin' ].join( d );
+		const base = [
+			'/usr/bin',
+			'/tmp/_npx/abc/node_modules/.bin',
+			'/x/bin',
+			'',
+			'/opt/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin',
+			'/bin',
+		].join( d );
 		assert.equal(
 			launchEnv( '/x/bin/node', base ).PATH,
 			[ '/x/bin', '/usr/bin', '/bin' ].join( d )

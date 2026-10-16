@@ -74,10 +74,15 @@ export function createWordPressHelpers( page, baseURL ) {
 		 */
 		async clickBlockToolbarButton( label ) {
 			await editor.showBlockToolbar();
-			await page
-				.getByRole( 'toolbar', { name: 'Block tools' } )
-				.getByRole( 'button', { name: label } )
-				.click();
+			const toolbar = page.getByRole( 'toolbar', {
+				name: 'Block tools',
+			} );
+			await toolbar.waitFor( { timeout: 5000 } ).catch( () => {
+				throw new Error(
+					`the block toolbar is not on screen. Is a block selected? An empty Paragraph shows the side inserter instead of a toolbar: give it text first (insertBlock { name: core/paragraph, attributes: { content } }, or type).`
+				);
+			} );
+			await toolbar.getByRole( 'button', { name: label } ).click();
 		},
 
 		/**

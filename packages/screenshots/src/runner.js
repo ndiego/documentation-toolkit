@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { loadSpecs, filterSpecs } from './spec.js';
 import { openSession } from './session.js';
 import { runScene } from './scenes.js';
+import { runSetup } from './setup.js';
 import { runSteps } from './actions.js';
 import { captureShot } from './capture.js';
 import {
@@ -141,6 +142,8 @@ export async function runShots( config, opts = {} ) {
 					try {
 						// Only this shot's page errors should show up in its failure diagnostics.
 						ctx.pageErrors.length = 0;
+						// Site state first, so templates and the scene can find what setup created.
+						await runSetup( ctx, shot.setup, log );
 						const resolved = await ctx.site.resolve( {
 							steps: shot.steps,
 							capture: shot.capture,
@@ -342,6 +345,11 @@ export async function runShots( config, opts = {} ) {
 								`    page errors: ${ ctx.pageErrors.slice( -3 ).join( ' | ' ) }`
 							);
 						}
+					}
+					if ( shot.setup?.length ) {
+						// Setup state belongs to this shot alone: undo it now, pass or fail, so the next shot starts
+						// from the same site.
+						await ctx.site.cleanup( log );
 					}
 					const moreToCome =
 						shotIndex < spec.shots.length - 1 ||

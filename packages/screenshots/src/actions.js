@@ -205,6 +205,35 @@ export const actions = {
 		await ctx.page.getByRole( 'menu' ).last().waitFor();
 	},
 
+	async openNotesSidebar( ctx ) {
+		// The top bar's "All notes" button exists only once the post has a note (setup: a note op, or a fixture).
+		const topBar = await resolveTarget( ctx, 'top-bar' );
+		const button = topBar
+			.getByRole( 'button', { name: 'All notes', exact: true } )
+			.first();
+		// The button appears once the editor has fetched the post's notes, a moment after the editor is ready.
+		await button.waitFor( { timeout: 10_000 } ).catch( () => {
+			throw new Error(
+				'openNotesSidebar: no "All notes" button in the top bar. The post has no notes yet; add one with setup ({ note: ... } or the post-with-notes fixture) or with steps (openBlockMenu, click { menuitem: "Add note" }).'
+			);
+		} );
+		if ( ( await button.getAttribute( 'aria-pressed' ) ) !== 'true' ) {
+			await button.click();
+		}
+		await ctx.page
+			.getByRole( 'region', { name: 'Editor settings' } )
+			.getByRole( 'heading', { name: 'All notes' } )
+			.waitFor();
+	},
+
+	async openCommandPalette( ctx ) {
+		await ctx.page.keyboard.press( 'ControlOrMeta+k' );
+		await ctx.page
+			.getByRole( 'combobox', { name: /command/i } )
+			.first()
+			.waitFor();
+	},
+
 	async click( ctx, key ) {
 		const loc = await resolveLocator( ctx, key );
 		await loc.click().catch( ( e ) => {
@@ -337,6 +366,9 @@ export const verbDocs = {
 	openToolbarDropdown: 'toolbar button name, e.g. "Align"',
 	openListView: 'none',
 	openOptionsMenu: 'none; the editor top-right Options menu',
+	openNotesSidebar:
+		'none; the "All notes" sidebar (the post needs a note: see setup). It opens in the inspector region.',
+	openCommandPalette: 'none; the command palette (primary+k)',
 	click: 'locator key, e.g. { button: "Replace" }',
 	hover: 'locator key',
 	type: 'text, or { text, pace: "human" }',

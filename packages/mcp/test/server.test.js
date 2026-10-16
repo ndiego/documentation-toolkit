@@ -33,9 +33,10 @@ after( async () => {
 } );
 
 describe( 'wp-docs-toolkit MCP server', () => {
-	it( 'exposes the five tools', async () => {
+	it( 'exposes the six tools', async () => {
 		const { tools } = await client.listTools();
 		assert.deepEqual( tools.map( ( t ) => t.name ).sort(), [
+			'inspect',
 			'list_presets',
 			'restart_environment',
 			'screenshot',
@@ -100,6 +101,43 @@ describe( 'wp-docs-toolkit MCP server', () => {
 			arguments: { preset: 'nope' },
 		} );
 		assert.equal( result.isError, true );
+	} );
+
+	it( 'screenshot rejects an unknown setup fixture before booting anything', async () => {
+		const started = Date.now();
+		const result = await client.callTool( {
+			name: 'screenshot',
+			arguments: { preset: 'post-editor', setup: 'long-pots' },
+		} );
+		assert.equal( result.isError, true );
+		// The schema's enum rejects it before the handler runs; the enum itself lists the names to the client.
+		assert.match( result.content[ 0 ].text, /setup/ );
+		assert.ok( Date.now() - started < 5000 );
+	} );
+
+	it( 'screenshot rejects an unknown setup operation with a suggestion', async () => {
+		const result = await client.callTool( {
+			name: 'screenshot',
+			arguments: {
+				preset: 'post-editor',
+				setup: [ { pots: { slug: 'a' } } ],
+			},
+		} );
+		assert.equal( result.isError, true );
+		assert.match(
+			result.content[ 0 ].text,
+			/unknown operation "pots" \(did you mean "post"\?\)/
+		);
+	} );
+
+	it( 'vocabulary lists the setup operations and fixtures', async () => {
+		const result = await client.callTool( {
+			name: 'vocabulary',
+			arguments: {},
+		} );
+		const v = JSON.parse( result.content[ 0 ].text );
+		assert.ok( v.setupOps.note );
+		assert.ok( v.fixtures[ 'post-with-notes' ] );
 	} );
 
 	it( 'restart_environment is harmless when nothing is running', async () => {

@@ -11,6 +11,8 @@ import { loadSpecs, filterSpecs } from './spec.js';
 import { verbNames } from './actions.js';
 import { targetNames } from './targets.js';
 import { sceneNames } from './scenes.js';
+import { setupOps } from './setup.js';
+import { fixtureNames } from './fixtures.js';
 import { presets, presetNames } from './presets.js';
 import { shootPreset } from './shoot.js';
 import { isSupportedNode, unsupportedNodeMessage } from './runtime.js';
@@ -218,7 +220,7 @@ async function main() {
 			return ( await doctor( config ) ) ? 0 : 1;
 		case 'vocab':
 			console.log(
-				`Scenes: ${ sceneNames.join( ', ' ) }\nVerbs: ${ verbNames.join( ', ' ) }\nTargets: ${ targetNames.join( ', ' ) }`
+				`Scenes: ${ sceneNames.join( ', ' ) }\nVerbs: ${ verbNames.join( ', ' ) }\nTargets: ${ targetNames.join( ', ' ) }\nSetup ops: ${ setupOps.join( ', ' ) }\nFixtures: ${ fixtureNames.join( ', ' ) }`
 			);
 			return 0;
 		default:

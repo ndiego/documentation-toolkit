@@ -89,10 +89,13 @@ export function launchSpec( via = 'auto', nodeBin = null ) {
  * @return {{PATH: string}} env entries
  */
 export function launchEnv( nodeBin, basePath = process.env.PATH || '' ) {
+	// When install itself runs under npx, its PATH carries npm's temporary .bin and node-gyp folders; those do
+	// not belong in a launch that outlives them.
+	const transient = /[\\/]node_modules[\\/]\.bin$|[\\/]node-gyp-bin$/;
 	const dirs = [
 		path.dirname( nodeBin ),
 		...basePath.split( path.delimiter ),
-	].filter( Boolean );
+	].filter( ( d ) => d && ! transient.test( d ) );
 	return { PATH: [ ...new Set( dirs ) ].join( path.delimiter ) };
 }
 

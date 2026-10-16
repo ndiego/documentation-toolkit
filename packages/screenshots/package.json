@@ -1,6 +1,6 @@
 {
 	"name": "@wp-docs-toolkit/screenshots",
-	"version": "0.3.5",
+	"version": "0.4.0",
 	"description": "Reproducible WordPress UI screenshots for documentation: boots WordPress Playground from a blueprint and captures YAML-defined shots with Playwright.",
 	"keywords": [
 		"wordpress",
@@ -38,7 +38,7 @@
 	"dependencies": {
 		"@playwright/test": "1.64.0",
 		"@wp-playground/cli": "3.1.57",
-		"@wp-docs-toolkit/demo-site": "0.3.5",
+		"@wp-docs-toolkit/demo-site": "0.4.0",
 		"pixelmatch": "^8.0.0",
 		"sharp": "^0.34.0",
 		"yaml": "^2.8.0"

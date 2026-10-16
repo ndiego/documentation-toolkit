@@ -9,11 +9,13 @@ import { validateLocatorKey } from './locators.js';
 import { walk } from './files.js';
 import { frameNames } from './style.js';
 import { expandPreset, presetNames, presetParamNames } from './presets.js';
+import { setupOps, validateSetupOp } from './setup.js';
+import { fixtures, fixtureNames } from './fixtures.js';
 
 const ID_RE = /^[a-z0-9][a-z0-9-]*$/;
 const KINDS = new Set( [ 'image', 'clip' ] );
 const FILE_KEYS = [ 'article', 'suite', 'defaults', 'shots' ];
-const DEFAULT_KEYS = [ 'scene', 'viewport', 'steps', 'capture' ];
+const DEFAULT_KEYS = [ 'scene', 'viewport', 'setup', 'steps', 'capture' ];
 const SHOT_KEYS = [
 	'id',
 	'preset',
@@ -23,6 +25,7 @@ const SHOT_KEYS = [
 	'scene',
 	'viewport',
 	'isolated',
+	'setup',
 	'steps',
 	'script',
 	'capture',
@@ -133,6 +136,7 @@ export function loadSpec( file, config ) {
 	checkKeys( file, 'defaults', defaults, DEFAULT_KEYS );
 	const defaultScene = defaults.scene || 'new-post';
 	checkScene( file, 'defaults', defaultScene );
+	const defaultSetup = normaliseSetup( file, 'defaults', defaults.setup );
 	const defaultSteps = normaliseSteps(
 		file,
 		'defaults',
@@ -210,13 +214,28 @@ export function loadSpec( file, config ) {
 			...normaliseSteps( file, where, preset?.steps || [], 'preset' ),
 			...normaliseSteps( file, where, shot.steps || [], 'shot' ),
 		];
+		// A shot's own setup replaces the default one (`setup: []` opts out); presets inherit it too, since setup
+		// is site state rather than the editor's starting point.
+		const setup =
+			shot.setup === undefined
+				? defaultSetup
+				: normaliseSetup( file, where, shot.setup );
+		// Later layers win, except `include`, which adds up: a shot that keeps the Options menu in the crop does not
+		// lose the toolbar its preset keeps.
+		const layers = [
+			preset ? {} : defaults.capture || {},
+			preset?.capture || {},
+			shot.capture || {},
+		];
+		const includes = layers.flatMap( ( c ) => toList( c.include ) );
 		const capture = normaliseCapture(
 			file,
 			where,
 			{
-				...( preset ? {} : defaults.capture || {} ),
-				...( preset?.capture || {} ),
-				...( shot.capture || {} ),
+				...Object.assign( {}, ...layers ),
+				...( includes.length
+					? { include: [ ...new Set( includes ) ] }
+					: {} ),
 			},
 			config
 		);
@@ -240,6 +259,7 @@ export function loadSpec( file, config ) {
 			scene,
 			viewport: shot.viewport || defaults.viewport || 'desktop',
 			isolated: Boolean( shot.isolated ),
+			setup,
 			steps,
 			script,
 			capture,
@@ -328,6 +348,63 @@ function normaliseSteps( file, where, steps, origin ) {
 			}
 		}
 		return { verb, arg, origin, index: i };
+	} );
+}
+
+/**
+ * Normalise a `setup` value: a fixture name (expanded to its operations here, so specHash covers them) or a list
+ * of single-key operations. Returns [] when there is none.
+ * @param {string}  file
+ * @param {string}  where
+ * @param {unknown} setup
+ * @return {{op: string, arg: Object}[]} operations
+ */
+function normaliseSetup( file, where, setup ) {
+	if ( setup === undefined || setup === null ) {
+		return [];
+	}
+	let ops = setup;
+	let origin = '';
+	if ( typeof setup === 'string' ) {
+		if ( ! fixtureNames.includes( setup ) ) {
+			throw new SpecError(
+				file,
+				`${ where }: unknown setup fixture "${ setup }"${ suggest( setup, fixtureNames ) }. Known: ${ fixtureNames.join( ', ' ) }`
+			);
+		}
+		ops = fixtures[ setup ].ops;
+		origin = ` (fixture ${ setup })`;
+	} else if ( ! Array.isArray( setup ) ) {
+		throw new SpecError(
+			file,
+			`${ where }: \`setup\` must be a fixture name (${ fixtureNames.join( ', ' ) }) or a list of operations (${ setupOps.join( ', ' ) })`
+		);
+	}
+	return ops.map( ( item, i ) => {
+		const at = `${ where }: setup[${ i }]${ origin }`;
+		if (
+			! item ||
+			typeof item !== 'object' ||
+			Array.isArray( item ) ||
+			Object.keys( item ).length !== 1
+		) {
+			throw new SpecError(
+				file,
+				`${ at } must be a single-key mapping (the operation), e.g. { post: { slug: my-post, content: ... } }. Operations: ${ setupOps.join( ', ' ) }`
+			);
+		}
+		const op = Object.keys( item )[ 0 ];
+		if ( ! setupOps.includes( op ) ) {
+			throw new SpecError(
+				file,
+				`${ at }: unknown operation "${ op }"${ suggest( op, setupOps ) }. Known: ${ setupOps.join( ', ' ) }`
+			);
+		}
+		const problem = validateSetupOp( op, item[ op ] );
+		if ( problem ) {
+			throw new SpecError( file, `${ at } (${ op }): ${ problem }` );
+		}
+		return { op, arg: item[ op ] };
 	} );
 }
 
@@ -505,6 +582,10 @@ function hashShot( shot ) {
 		capture: shot.capture,
 		script: shot.script ? fs.readFileSync( shot.script, 'utf8' ) : null,
 	};
+	// Only when present, so shots without setup keep the hash they had before setup existed.
+	if ( shot.setup?.length ) {
+		material.setup = shot.setup;
+	}
 	return crypto
 		.createHash( 'sha256' )
 		.update( JSON.stringify( material ) )

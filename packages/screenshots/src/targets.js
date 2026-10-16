@@ -172,9 +172,14 @@ export function isFullViewport( name ) {
 
 /**
  * Targets whose crop should carry no padding: they sit flush against other UI (the admin content area is bordered
- * by the admin menu and the toolbar), so any padding drags that UI into the image.
+ * by the admin menu and the toolbar; the editor sidebars by the top bar and the canvas), so any padding drags that
+ * UI into the image.
  */
-export const TARGET_PAD = { 'admin-content': 0 };
+export const TARGET_PAD = {
+	'admin-content': 0,
+	inspector: 0,
+	'document-sidebar': 0,
+};
 
 /**
  * The padding a capture of `target` gets when the shot sets none.

@@ -72,6 +72,7 @@ export function freePort( host = '127.0.0.1' ) {
  * @param {string}             [options.id]     shot id (file name); defaults to the preset name
  * @param {string}             [options.alt]    alt text recorded in the manifest
  * @param {string}             [options.frame]  frame override (none | card | auto | wide | standard | portrait | banner)
+ * @param {string|Object[]}    [options.setup]  site state to create first: a fixture name or a list of setup operations
  * @param {string}             [options.out]    where to copy the image; omit to keep it in memory only
  * @param {boolean}            [options.headed] show the browser
  * @param {number}             [options.port]   Playground port; 0 picks a free one
@@ -88,7 +89,7 @@ export async function shootPreset( config, options ) {
  * warm session use this first so a bad request fails in milliseconds rather than after a boot.
  * @param {Object} config
  * @param {Object} options see shootPreset
- * @return {{spec: Object, tmp: string, id: string, alt: string, discard: () => void}} the loaded spec, its temp directory, and how to drop it when the shot is not rendered
+ * @return {{spec: Object, tmp: string, id: string, alt: string, source: string, discard: () => void}} the loaded spec, its YAML source, its temp directory, and how to drop it when the shot is not rendered
  */
 export function prepareShot( config, options ) {
 	const name = options.preset || null;
@@ -116,13 +117,14 @@ export function prepareShot( config, options ) {
 	);
 	const discard = () => fs.rmSync( tmp, { recursive: true, force: true } );
 	const specFile = path.join( tmp, 'shoot.yaml' );
-	fs.writeFileSync(
-		specFile,
-		YAML.stringify( buildAdhocSpec( name, params, id, alt, options ) )
+	// The YAML a spec file would carry for this shot; callers hand it back so a one-off becomes a committed spec.
+	const source = YAML.stringify(
+		buildAdhocSpec( name, params, id, alt, options )
 	);
+	fs.writeFileSync( specFile, source );
 	try {
 		const spec = loadSpec( specFile, { ...config, specsBase: tmp } );
-		return { spec, tmp, id, alt, discard };
+		return { spec, tmp, id, alt, source, discard };
 	} catch ( e ) {
 		discard();
 		if ( e.name !== 'SpecError' ) {
@@ -221,7 +223,7 @@ async function portFor( config, options ) {
  * @param {Object}      params
  * @param {string}      id
  * @param {string}      alt
- * @param {Object}      options frame, annotate, include, pad
+ * @param {Object}      options frame, annotate, include, pad, setup
  * @return {Object} spec data
  */
 export function buildAdhocSpec( preset, params, id, alt, options = {} ) {
@@ -257,6 +259,14 @@ export function buildAdhocSpec( preset, params, id, alt, options = {} ) {
 	}
 	if ( options.viewport ) {
 		shot.viewport = options.viewport;
+	}
+	if (
+		options.setup !== undefined &&
+		options.setup !== null &&
+		! ( Array.isArray( options.setup ) && ! options.setup.length )
+	) {
+		// loadSpec validates it (a fixture name or a list of operations).
+		shot.setup = options.setup;
 	}
 	if ( options.steps?.length ) {
 		shot.steps = options.steps;

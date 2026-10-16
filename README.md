@@ -47,8 +47,27 @@ npx -y -p @wp-docs-toolkit/screenshots wp-screenshots shoot --preset site-editor
 pixels, `lint` ties images to Markdown. The [screenshots README](packages/screenshots/README.md) has the spec
 format and the [example project](examples/block-editor-handbook) shows a working setup.
 
-**In CI.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.3.5` with `manifest` and `docs` inputs, so a
+**In CI.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.4.0` with `manifest` and `docs` inputs, so a
 manifest that would break an import cannot merge.
+
+## One engine, two ways in
+
+A prompt in Claude Desktop and a spec file in a documentation repository are two ways of writing the same document.
+Everything the MCP `screenshot` tool accepts (a preset and its parameters, or a scene and steps; target, frame,
+annotations, viewport, setup) becomes a one-shot YAML spec, validated by the loader that reads a repository's
+`*.shots.yaml` files. Nothing an agent can ask for is missing from the spec format, and nothing a spec can do is hidden
+from the MCP, except the batch run itself.
+
+- **By prompt** is for one-off images and for working out a recipe: iterate until the image is right, then take the
+  spec from the tool's result (it returns the YAML it rendered) and commit it next to the article.
+- **By spec** is for keeping a handbook current: `wp-screenshots run` renders every shot, `check --docker` produces
+  the canonical pixels and reports which images changed, `update` accepts them, `lint` ties images to Markdown. Each
+  manifest entry hashes the full recipe, so a WordPress release becomes a re-render plus a review of changed pixels.
+
+Two differences to keep in mind. MCP previews render on the user's machine, so fonts differ slightly from the canonical
+Docker renders; committed pixels always come from `check --docker`. And the MCP keeps a warm WordPress session between
+calls, while the batch runner reboots before a shot marked `isolated: true`, so the batch path is the stricter one about
+starting state.
 
 ## Sample prompts
 
@@ -62,11 +81,17 @@ With the MCP server installed, these work as written in Claude Desktop, Claude C
 - *Give me the site editor's Styles view and save it to ~/Desktop/styles.webp.*
 - *A screenshot of the Plugins screen, cropped to the content area, not the whole admin.*
 - *Open the block inserter, search for Gallery, and screenshot the inserter panel.*
+- *The Paragraph block's Options menu with "Add note" outlined.*
+- *A post with two notes, one replied to and one resolved, with the Notes sidebar open.*
+- *What is on screen after opening the Image block's toolbar Options menu?*
 - *What screenshot presets are there?*
 - *Validate docs/manifest.json against the docs folder.*
 
 Subjects are presets: a block on the canvas, its toolbar or settings tab, the site editor and its views, the post
-editor, any wp-admin screen, the front end. Highlights are anchored to named controls, so "outline the Resolution
+editor, any wp-admin screen, the front end. Site state that must exist before the editor opens (a post with notes,
+a long post for List View, a synced pattern, a second author) comes from `setup`: a built-in fixture or a list of
+server-side operations, created before the shot and removed after it. `inspect` returns what is on screen (every
+button, menu item, tab and control by its accessible name) instead of an image, for writing recipes without guessing. Highlights are anchored to named controls, so "outline the Resolution
 control" finds the control by its label. Blocks with showcase content are Image, Gallery and Table; for others, ask
 for the block "in a new post". Anything a preset does not cover, the agent builds from the engine's step
 vocabulary (open the inserter, click a button, type, press a key), validated the same way as a written spec.

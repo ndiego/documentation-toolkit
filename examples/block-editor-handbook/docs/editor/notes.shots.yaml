@@ -1,0 +1,49 @@
+article: notes
+shots:
+  - id: add-note
+    preset: block-canvas
+    block: core/paragraph
+    post: new
+    alt: A Paragraph block's Options menu open on the editor canvas, with the Add note item outlined.
+    steps:
+      - openBlockMenu
+    capture:
+      include: [ options-menu ]
+      annotate:
+        # exact: false, because the item's accessible name carries the platform's shortcut text (Add note⌥⌘M on
+        # macOS, Add noteCtrl+Alt+M on Linux, where the canonical renders are made).
+        - outline: { menuitem: Add note, exact: false }
+
+  - id: writing-note
+    preset: block-canvas
+    block: core/paragraph
+    post: new
+    alt: A note being written on a Paragraph block, with the note box open and a sentence typed but not yet added.
+    steps:
+      - openBlockMenu
+      - click: { menuitem: Add note, exact: false }
+      - type: Can we add the opening hours here?
+    capture:
+      target: editor
+      frame: wide
+
+  - id: notes-sidebar
+    setup: post-with-notes
+    preset: post-editor
+    post: setup-post-with-notes
+    alt: The post editor with the Notes sidebar open, showing an open note with a reply and a resolved note below it.
+    steps:
+      - openNotesSidebar
+
+  - id: resolved-note
+    setup: post-with-notes
+    preset: post-editor
+    post: setup-post-with-notes
+    alt: The Notes sidebar, with the resolved note's Marked as resolved entry outlined.
+    steps:
+      - openNotesSidebar
+    capture:
+      target: inspector
+      frame: portrait
+      annotate:
+        - outline: { text: Marked as resolved }

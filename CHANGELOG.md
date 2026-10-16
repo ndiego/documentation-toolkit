@@ -2,6 +2,22 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
+## 0.4.0 (2026-10-16)
+
+- Screenshots: `setup` creates site state before the scene and removes it after the shot, server-side through the
+  REST API so it is fast and identical every run. Operations: `post` (from block markup; posts, pages, synced
+  patterns), `note` (WordPress 7.1 Notes on a block, with author, date, replies and resolved state), `user`,
+  `option`, `plugin`. Built-in fixtures: `long-post`, `post-with-notes`, `synced-pattern`, `second-author`, with
+  fixed authors, dates and content. A shot's `setup` is part of its hash, so the manifest re-creates the exact image.
+- MCP: `inspect` runs a preset or scene and steps like `screenshot` and returns the visible interactive elements of
+  the region (role, accessible name, the named region they sit in) and its accessibility tree instead of an image,
+  with an optional low-resolution preview. `screenshot` and `inspect` take `setup`; the `screenshot` result carries
+  the YAML it was rendered from, ready to commit as a spec.
+- Steps: `openNotesSidebar` and `openCommandPalette`. A Paragraph inserted into a new post by a block preset gets a
+  sample sentence, because an empty Paragraph shows the side inserter instead of a block toolbar; the toolbar helper
+  says so when no toolbar is on screen.
+- `install` no longer copies npx's temporary `node_modules/.bin` folders into the registered PATH.
+
 ## 0.3.5 (2026-10-16)
 
 - Fix: on a machine whose default Node is 26, screenshots failed with `Failed to load fs-ext native module` even after

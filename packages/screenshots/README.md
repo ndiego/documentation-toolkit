@@ -166,7 +166,7 @@ shots:
   `{ selector: .css }`. Names match the whole accessible name; add `exact: false` for a substring.
 - **Capture targets** are named regions from one registry: `editor`, `selected-block`, `block-toolbar`,
   `inspector`, `inspector-panel:<name>`, `inserter`, `list-view`, `top-bar`, `popover`, `modal`,
-  `admin-content`, `admin-screen`, `front`, or a CSS selector. `include:` widens the crop, `pad:` adds space,
+  `admin-content`, `admin-screen`, `front`, or a CSS selector. `include:` widens the crop (a shot's regions add to its preset's, so `include: [ options-menu ]` on `block-canvas` keeps the toolbar too), `pad:` adds space,
   `fit: content` trims a tall panel, `frame: card` puts a full-editor shot on a card.
 - **Annotations** anchor to elements, never to pixels: `outline`, `arrow` (with `from: top | bottom | left |
   right | top-left | …`), numbered `badge`, `dim`. WordPress blue with a white halo so they stay legible over the
@@ -185,6 +185,55 @@ shots:
   with a "did you mean", so `lint` catches them in CI before anything boots.
 - **Escape hatch:** `script: ./file.js` replaces `steps` with a default export `(ctx) => Promise<void>` that
   receives `{ page, editor, admin, pageUtils, site, style }`.
+
+#### Setup: site state before the scene
+
+`setup` creates what a shot needs on the site before its scene opens, over the REST API, so it is fast and the
+same every run: posts with particular blocks, notes on blocks, extra users, option values, an activated plugin.
+Give it a fixture name or a list of single-key operations:
+
+```yaml
+shots:
+  - id: list-view-long
+    alt: List View on a long post.
+    preset: post-editor
+    post: setup-long-post
+    setup: long-post
+  - id: note-on-paragraph
+    alt: A note on a paragraph.
+    scene: post:pricing-draft
+    setup:
+      - user: { login: sam, display_name: Sam Ito, role: editor }
+      - post: { slug: pricing-draft, title: Pricing, status: draft, content: "<!-- wp:paragraph -->\n<p>Plans start at $5.</p>\n<!-- /wp:paragraph -->" }
+      - note: { post: pricing-draft, block: core/paragraph, text: Is this still right?, author: sam, replies: [ { text: Yes. } ] }
+```
+
+| Operation | Takes |
+|---|---|
+| `post` | `slug`, `title?`, `content?` (block markup), `type?: post \| page \| wp_block`, `status?: draft \| publish` (default publish), `date?`, `author?: <login>` |
+| `note` | `post: <slug>`, `block: <name>` or `{ name, nth }` (nth counts from 0, nested blocks included), `text`, `author?`, `date?`, `replies?: [ { text, author?, date? } ]`, `resolved?: true` |
+| `user` | `login`, `role: administrator \| editor \| author \| contributor \| subscriber`, `display_name?`, `email?` |
+| `option` | `name`, `value`: one of the core `/wp/v2/settings` keys (`title`, `description`, `timezone`, `date_format`, `time_format`, `start_of_week`, `language`, `use_smilies`, `default_category`, `default_post_format`, `posts_per_page`, `show_on_front`, `page_on_front`, `page_for_posts`, `default_ping_status`, `default_comment_status`, `site_logo`, `site_icon`); the value may be a `{{page.<slug>}}` template |
+| `plugin` | `slug` (the folder, `akismet`, or `akismet/akismet`), `status?: active \| inactive` (default active) |
+
+Fixtures: `long-post` (post `setup-long-post`, about twenty varied blocks so List View scrolls),
+`post-with-notes` (post `setup-post-with-notes` with an open note and reply on the first paragraph and a resolved
+note on the third; the reviewer is the demo site's `author-2`, so avatar colours stay fixed), `synced-pattern` (synced pattern `setup-synced-pattern`),
+`second-author` (user `setup-author`, role author). The MCP `vocabulary` tool lists them. A fixture expands
+when the spec loads, so its content counts toward the shot's `specHash`.
+
+- Dates default to 2025-01-15 10:00 and fixture text is fixed, so the pixels do not drift. A post that gets notes
+  is updated after creation, so its "Last edited" line in the Post panel reads "a few seconds ago"; other
+  posts read "N years ago", which changes once a year.
+- Setup runs before the scene, so `scene: post:<slug>` and `{{post.<slug>}}` templates find what it created. A
+  slug that already exists on the site is an error rather than a silent `-2` suffix.
+- **Cleanup is guaranteed per shot**: after the shot, pass or fail, everything setup created is deleted (posts,
+  patterns, notes, users, whose content is reassigned to the admin) and every option and plugin it changed is put
+  back, newest first. The next shot starts from the same site.
+- `defaults.setup` applies to every shot, presets included; a shot's own `setup` replaces it (`setup: []` opts
+  out).
+- Errors name the operation and carry the REST message: `setup[0] (user admin): REST POST /wp/v2/users failed
+  (500): Sorry, that username already exists!`.
 
 Authoring loop: `wp-screenshots dev --article x --shot y` opens a visible browser, runs the scene and steps, and
 pauses in the Playwright Inspector. Its "Pick locator" tool shows the role and name to use in a step.

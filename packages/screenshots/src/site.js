@@ -9,7 +9,7 @@ export function createSite( options ) {
 	const { baseURL, context } = options;
 	const cache = new Map();
 	let nonce = null;
-	const created = []; // { type: 'post'|'page', id }
+	const created = []; // { type, id, previous? }: see trackCreated
 
 	async function cookieHeader() {
 		const cookies = await context.cookies( baseURL );
@@ -174,30 +174,85 @@ export function createSite( options ) {
 		return value;
 	}
 
-	function trackCreated( type, id ) {
-		if ( id && ! created.some( ( c ) => c.id === id ) ) {
-			created.push( { type, id } );
+	/**
+	 * Record something a shot created or changed, for `cleanup` to undo. Types: post, page, wp_block, comment,
+	 * user (deleted), option and plugin (`id` is the option name or plugin file; `extra.previous` is restored).
+	 * The first record of an item wins, so an option set twice is restored to its original value.
+	 * @param {string}        type
+	 * @param {number|string} id
+	 * @param {Object}        [extra]
+	 */
+	function trackCreated( type, id, extra = {} ) {
+		if ( id && ! created.some( ( c ) => c.type === type && c.id === id ) ) {
+			created.push( { type, id, ...extra } );
 		}
 	}
 
+	let myId = null;
+	async function currentUserId() {
+		if ( ! myId ) {
+			myId = ( await rest( '/wp/v2/users/me' ) ).id;
+		}
+		return myId;
+	}
+
+	async function undo( item ) {
+		const { type, id } = item;
+		switch ( type ) {
+			case 'comment':
+				return rest( `/wp/v2/comments/${ id }?force=true`, {
+					method: 'DELETE',
+				} );
+			case 'user':
+				return rest(
+					`/wp/v2/users/${ id }?force=true&reassign=${ await currentUserId() }`,
+					{ method: 'DELETE' }
+				);
+			case 'option':
+				return rest( '/wp/v2/settings', {
+					method: 'POST',
+					body: { [ id ]: item.previous },
+				} );
+			case 'plugin':
+				return rest( `/wp/v2/plugins/${ id }`, {
+					method: 'POST',
+					body: { status: item.previous },
+				} );
+			default:
+				return rest(
+					`${ deleteRoutes[ type ] || routes.post }/${ id }?force=true`,
+					{ method: 'DELETE' }
+				);
+		}
+	}
+
+	const deleteRoutes = {
+		post: routes.post,
+		page: routes.page,
+		wp_block: '/wp/v2/blocks',
+	};
+
 	/**
-	 * Delete everything shots created since the last cleanup (auto-drafts and drafts from new-post scenes).
+	 * Undo everything shots created or changed since the last cleanup, newest first: auto-drafts and drafts from
+	 * new-post scenes, and whatever setup created (posts, notes, users) or changed (options, plugins).
 	 * @param {(message: string) => void} [log]
 	 */
 	async function cleanup( log = () => {} ) {
 		while ( created.length ) {
-			const { type, id } = created.pop();
-			const route = type === 'page' ? routes.page : routes.post;
+			const item = created.pop();
 			try {
-				await rest( `${ route }/${ id }?force=true`, {
-					method: 'DELETE',
-				} );
+				await undo( item );
 			} catch ( e ) {
-				log(
-					`cleanup: could not delete ${ type } ${ id }: ${ e.message }`
-				);
+				// A note is deleted along with its post; a 404 means it is already gone.
+				if ( ! /\((404|410)\)/.test( e.message ) ) {
+					log(
+						`cleanup: could not undo ${ item.type } ${ item.id }: ${ e.message }`
+					);
+				}
 			}
 		}
+		// Slugs looked up during the shot may now point at deleted content.
+		cache.clear();
 	}
 
 	return { rest, lookup, resolve, trackCreated, cleanup, baseURL };

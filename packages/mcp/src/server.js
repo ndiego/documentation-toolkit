@@ -4,6 +4,7 @@
  * Tools:
  *   list_presets       the subjects a screenshot can be taken of, with their parameters
  *   screenshot         render one subject from a preset (zero-config against the bundled demo site, or a project)
+ *   inspect            run the same scene and steps, then list what is on screen by role and accessible name
  *   validate_manifest  check a handbook manifest.json for the developer.wordpress.org importer
  *
  * The screenshot tool returns the image inline (PNG, scaled for display) and, when `out` is given, writes the
@@ -20,6 +21,7 @@ import {
 	presetNames,
 	prepareShot,
 	renderShot,
+	inspectShot,
 	openSession,
 	ensureChromium,
 	ensureSupportedNode,
@@ -36,6 +38,10 @@ import {
 	DIRECTIONS,
 	BADGE_POSITIONS,
 	captureFrameNames,
+	fixtures,
+	fixtureNames,
+	setupDocs,
+	setupOps,
 } from '@wp-docs-toolkit/screenshots';
 import { validateManifest } from '@wp-docs-toolkit/manifest';
 
@@ -105,6 +111,14 @@ function presetParamFields() {
 	);
 }
 const PRESET_PARAM_FIELDS = presetParamFields();
+// Site state created before the scene and removed after the shot. A plain string (not an enum) so an unknown
+// fixture name gets the engine's did-you-mean instead of a generic validation error.
+const SETUP_FIELD = z
+	.union( [ z.string(), z.array( z.record( z.string(), z.unknown() ) ) ] )
+	.optional()
+	.describe(
+		`Site state to create before the scene opens, and remove after the shot: a fixture name (${ fixtureNames.join( ', ' ) }) or a list of single-key operations (${ setupOps.join( ', ' ) }), e.g. [ { "post": { "slug": "my-post", "content": "<!-- wp:paragraph --><p>Hi</p><!-- /wp:paragraph -->" } }, { "note": { "post": "my-post", "block": "core/paragraph", "text": "Check this" } } ], then open it with scene post:my-post or preset post-editor and post: my-post. Fixtures create slugs starting setup- (long-post makes setup-long-post). \`vocabulary\` lists each fixture and operation.`
+	);
 
 // One annotation as a client states it: what to draw, and which element (by its accessible name) to anchor to.
 const annotationSchema = z.object( {
@@ -212,7 +226,7 @@ export function toSpecAnnotation( a, defaultWithin = null ) {
 export function createServer( options = {} ) {
 	const server = new McpServer( {
 		name: 'wp-docs-toolkit',
-		version: '0.3.5',
+		version: '0.4.0',
 	} );
 	const maxWidth = options.maxWidth ?? 1400;
 	const warm = options.warm || createWarmSession( options );
@@ -266,6 +280,7 @@ export function createServer( options = {} ) {
 					.describe(
 						'Steps to run before capturing, after any preset steps: each a verb name or a single-key object, e.g. "openListView", { "searchInserter": "Gallery" }, { "click": { "button": "Replace" } }, { "openInspector": "styles" }, { "press": "Escape" }. Call `vocabulary` for the verbs and locator keys. Unknown verbs are rejected with a suggestion.'
 					),
+				setup: SETUP_FIELD,
 				viewport: z
 					.union( [
 						z.enum( VIEWPORT_NAMES ),
@@ -346,6 +361,7 @@ export function createServer( options = {} ) {
 				frame: args.frame,
 				scene: args.scene,
 				steps: args.steps,
+				setup: args.setup,
 				viewport: args.viewport,
 				fit: args.fit,
 				mask: args.mask,
@@ -381,6 +397,10 @@ export function createServer( options = {} ) {
 				preset: args.preset || null,
 				scene: args.scene || null,
 				steps: ( args.steps || [] ).length,
+				setup:
+					typeof args.setup === 'string'
+						? args.setup
+						: ( args.setup || [] ).length,
 				params,
 				width: result.width,
 				height: result.height,
@@ -389,7 +409,8 @@ export function createServer( options = {} ) {
 				encoding: result.encoding,
 				file: result.file,
 				alt: result.alt,
-				note: 'Local preview render from a warm WordPress session (restart_environment resets it). Canonical pixels for committing come from `wp-screenshots check --docker` in the documentation project.',
+				spec: prepared.source,
+				note: 'Local preview render from a warm WordPress session (restart_environment resets it). `spec` is the YAML this image was rendered from: paste it into a *.shots.yaml file next to the article to make it a committed, re-renderable screenshot (set `article` and `id` to real names). Canonical pixels for committing come from `wp-screenshots check --docker` in the documentation project.',
 			};
 			return {
 				content: [
@@ -405,11 +426,133 @@ export function createServer( options = {} ) {
 	);
 
 	server.registerTool(
+		'inspect',
+		{
+			title: 'Inspect a WordPress screen',
+			description:
+				"Run the same preset or scene and steps as `screenshot`, then return what is on screen instead of an image: the visible interactive elements of the region (buttons, menu items, tabs, links, form controls) with their role, accessible name and the named region they sit in, plus the region's accessibility tree. Call it before writing `annotate` or `click`/`hover` steps so names are not guessed; `preview: true` adds a small image of the region. Same speed as `screenshot`.",
+			inputSchema: {
+				preset: z
+					.enum( presetNames )
+					.optional()
+					.describe(
+						'The subject, as for `screenshot`. Leave it out to give scene and steps instead.'
+					),
+				scene: z
+					.string()
+					.optional()
+					.describe(
+						`Starting state when not using a preset: ${ SCENE_HINT }.`
+					),
+				steps: z
+					.array(
+						z.union( [
+							z.string(),
+							z.record( z.string(), z.unknown() ),
+						] )
+					)
+					.optional()
+					.describe(
+						'Steps to run before inspecting, after any preset steps, exactly as for `screenshot`, e.g. "openBlockMenu", { "click": { "button": "Replace" } }.'
+					),
+				setup: SETUP_FIELD,
+				viewport: z
+					.union( [
+						z.enum( VIEWPORT_NAMES ),
+						z.object( { width: z.number(), height: z.number() } ),
+					] )
+					.optional()
+					.describe(
+						`Viewport: ${ VIEWPORT_HINT }, or {width, height}.`
+					),
+				...PRESET_PARAM_FIELDS,
+				target: z
+					.string()
+					.optional()
+					.describe(
+						`The region to inspect instead of the preset default; viewport for the whole screen. One of: ${ TARGET_HINT }.`
+					),
+				include: z
+					.array( z.string() )
+					.optional()
+					.describe(
+						'Extra named regions to inspect along with the target, e.g. [ "block-toolbar" ].'
+					),
+				preview: z
+					.boolean()
+					.optional()
+					.describe(
+						'Also return a low-resolution PNG of the region (at most 800 px wide).'
+					),
+			},
+		},
+		async ( args ) => {
+			const params = {};
+			for ( const key of Object.keys( PRESET_PARAM_FIELDS ) ) {
+				if ( args[ key ] !== undefined ) {
+					params[ key ] = args[ key ];
+				}
+			}
+			// Validate first, without booting, exactly as `screenshot` does.
+			const config = await warm.config();
+			const prepared = prepareShot( config, {
+				preset: args.preset,
+				params,
+				scene: args.scene,
+				steps: args.steps,
+				setup: args.setup,
+				viewport: args.viewport,
+				target: args.target,
+				include: args.include,
+			} );
+			const result = await warm
+				.run( ( { session } ) =>
+					inspectShot( config, prepared, {
+						session,
+						preview: Boolean( args.preview ),
+						log: () => {},
+					} )
+				)
+				.catch( ( e ) => {
+					// A boot failure means inspectShot never ran, so nothing has cleaned up the prepared shot.
+					prepared.discard();
+					throw e;
+				} );
+			const summary = {
+				region: result.region,
+				regions: result.regions,
+				elements: result.elements,
+				...( result.omitted
+					? {
+							omitted: `${ result.omitted } more elements not listed; inspect a smaller target`,
+						}
+					: {} ),
+				note: 'A `name` is what locator keys match: { "button": "Replace" }, { "menuitem": "Add note" } in `annotate` and in click/hover steps. annotate matches a substring by default; steps match the whole name unless exact: false, and a keyboard shortcut shown in a name (⌘C on macOS, Ctrl+C elsewhere) differs by platform, so use the words before it with exact: false. `within` is the named region the element sits in: pass it as `within` to tell apart elements with the same name, or as `target` to crop to it. `regions` lists the named regions on screen.',
+			};
+			const content = [
+				{ type: 'text', text: JSON.stringify( summary, null, 2 ) },
+				{
+					type: 'text',
+					text: `Accessibility tree of ${ result.region }${ result.snapshotTruncated ? ' (truncated)' : '' }:\n${ result.snapshot }`,
+				},
+			];
+			if ( result.preview ) {
+				content.push( {
+					type: 'image',
+					data: result.preview.toString( 'base64' ),
+					mimeType: 'image/png',
+				} );
+			}
+			return { content };
+		}
+	);
+
+	server.registerTool(
 		'vocabulary',
 		{
 			title: 'Screenshot vocabulary',
 			description:
-				'Everything a free-form screenshot can be built from: scenes (starting states), step verbs with their arguments, named capture targets, locator keys for naming elements, frames and arrow directions. Call it before writing `steps` for a subject no preset covers.',
+				'Everything a free-form screenshot can be built from: scenes (starting states), step verbs with their arguments, named capture targets, locator keys for naming elements, frames and arrow directions. Call it before writing `steps` for a subject no preset covers; `inspect` then shows what the elements on a screen are called.',
 			inputSchema: {},
 		},
 		async () => ( {
@@ -624,6 +767,13 @@ export function describeVocabulary() {
 			),
 		},
 		verbs: verbDocs,
+		setupOps: setupDocs,
+		fixtures: Object.fromEntries(
+			fixtureNames.map( ( name ) => [
+				name,
+				fixtures[ name ].description,
+			] )
+		),
 		targets: targetNames,
 		locatorKeys: {
 			keys: LOCATOR_KEYS,

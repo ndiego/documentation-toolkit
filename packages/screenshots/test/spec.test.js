@@ -65,6 +65,7 @@ describe( 'loadSpec', () => {
 			scene: 'new-post',
 			viewport: 'desktop',
 			isolated: false,
+			setup: [],
 			steps: [],
 			script: null,
 			capture: {
@@ -1136,6 +1137,18 @@ describe( 'annotationScale', () => {
 	} );
 } );
 
+describe( 'capture include', () => {
+	it( "adds the shot's regions to the preset's instead of replacing them", () => {
+		const spec = load(
+			'article: a\nshots:\n  - id: x\n    preset: block-canvas\n    block: core/image\n    alt: x\n    capture:\n      include: [ options-menu, block-toolbar ]\n'
+		);
+		assert.deepEqual( spec.shots[ 0 ].capture.include, [
+			'block-toolbar',
+			'options-menu',
+		] );
+	} );
+} );
+
 describe( 'vocabulary docs', () => {
 	it( 'document every verb and nothing else', () => {
 		assert.deepEqual(
@@ -1155,10 +1168,11 @@ describe( 'vocabulary docs', () => {
 } );
 
 describe( 'target padding', () => {
-	it( 'is zero for admin-content and the style default otherwise', () => {
+	it( 'is zero for flush regions and the style default otherwise', () => {
 		const style = mergeStyle();
 		assert.equal( defaultPadFor( 'admin-content', style ), 0 );
-		assert.equal( defaultPadFor( 'inspector', style ), style.pad );
+		assert.equal( defaultPadFor( 'inspector', style ), 0 );
+		assert.equal( defaultPadFor( 'popover', style ), style.pad );
 		assert.equal( defaultPadFor( null, style ), style.pad );
 	} );
 } );

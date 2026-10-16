@@ -16,7 +16,7 @@ const BLOCK_PARAM = {
 };
 const POST_PARAM = {
 	description:
-		'Slug of the post to open (default: block-<name> from the block param). "new" starts an empty post and inserts the block.',
+		'Slug of the post to open (default: block-<name> from the block param). "new" starts an empty post and inserts the block (a Paragraph gets a sample sentence: an empty one shows no block toolbar).',
 };
 
 export const presets = {
@@ -198,8 +198,21 @@ function sceneFor( block, post ) {
 	return `post:${ post || showcaseSlug( block ) }`;
 }
 
+// Content a block gets when a preset inserts it into a new post. An empty Paragraph is the editor's "empty default
+// block": it shows the side inserter instead of a block toolbar, so a toolbar or Options-menu shot needs text in it.
+const NEW_BLOCK_ATTRIBUTES = {
+	'core/paragraph': {
+		content:
+			'The harbour path is at its best an hour after sunrise, when the light is low and the tide is out.',
+	},
+};
+
 function stepsFor( block, post ) {
-	return post === 'new'
-		? [ { insertBlock: block } ]
-		: [ { selectBlock: block } ];
+	if ( post !== 'new' ) {
+		return [ { selectBlock: block } ];
+	}
+	const attributes = NEW_BLOCK_ATTRIBUTES[ block ];
+	return [
+		{ insertBlock: attributes ? { name: block, attributes } : block },
+	];
 }

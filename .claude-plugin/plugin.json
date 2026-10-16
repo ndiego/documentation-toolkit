@@ -1,6 +1,6 @@
 {
 	"name": "wp-docs-toolkit",
-	"version": "0.3.5",
+	"version": "0.4.0",
 	"description": "Skills for writing and maintaining WordPress.org documentation: reproducible screenshots and handbook manifest validation.",
 	"author": {
 		"name": "Nick Diego"
