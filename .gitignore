@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# wp-shots working files (logs, failures, check staging, reports) when the engine is run from here
+.wp-shots/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Local environment
+.env
+.env.*
+npm-debug.log*
