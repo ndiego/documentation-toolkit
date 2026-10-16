@@ -328,7 +328,7 @@ async function doctor( config ) {
 	check(
 		`Node ${ process.versions.node }`,
 		major > 22 || ( major === 22 && minor >= 19 ),
-		'Node 22.19+ is required by @wordpress/e2e-test-utils-playwright'
+		'Node 22.19+ is required (fs.globSync, Playground CLI)'
 	);
 	check(
 		config.fallback

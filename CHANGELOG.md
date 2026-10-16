@@ -4,6 +4,9 @@ All packages in this repository share one version. Consumers pin a tag.
 
 ## 0.3.3 (2026-10-16)
 
+- Screenshots: dropped `@wordpress/e2e-test-utils-playwright`. The ten helpers the engine used live in `src/wp.js`
+  now (ported from Gutenberg, GPL-2.0-or-later). That removes Lighthouse, Sentry and Octokit from the install,
+  about 110 MB and 150 packages a consumer never ran.
 - Fix: the first screenshot on a machine without Chromium failed with `Package subpath './cli.js' is not defined by
   "exports" in playwright/package.json`. The auto-install now resolves Playwright's CLI through a declared export
   (`@playwright/test/cli`). Found on a colleague's first install from npm.

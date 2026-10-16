@@ -216,8 +216,7 @@ version a render needs no network for WordPress itself.
 
 ## Regenerating at a WordPress release
 
-1. Bump `preferredVersions.wp` in the blueprint and `wordpress.version` in `shots.config.js`. Bump
-   `@wordpress/e2e-test-utils-playwright` here if the editor changed a lot.
+1. Bump `preferredVersions.wp` in the blueprint and `wordpress.version` in `shots.config.js`.
 2. `wp-screenshots check --docker` (or the project's CI job) and open `<workDir>/report/index.html`.
 3. Review the before/after pairs. A changed image is also a prompt to re-read the article text.
 4. `wp-screenshots update`, then open a pull request.

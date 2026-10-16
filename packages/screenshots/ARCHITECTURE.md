@@ -34,10 +34,11 @@ WordPress version, style tokens) and does the rest. Rules that keep that true:
 | `spec.js` | Discover specs (`config.specs` globs or `shotsDir`), load and validate YAML; expand `defaults` and presets; reject unknown keys, verbs, scenes, targets, frames, presets and locator keys with a "did you mean"; compute spec hashes |
 | `presets.js` | Subjects (`block-canvas`, `block-settings`, `site-editor`, …) expanded into scene, steps and capture; parameter validation; the table `wp-screenshots presets` prints |
 | `env/playground.js` | Start and stop `@wp-playground/cli server` from a blueprint, wait for the "Ready!" line (the HTTP server answers before the blueprint seed finishes), assert the booted WordPress and PHP versions |
-| `browser.js` | Launch Chromium with the deterministic context options; build `Admin`, `Editor`, `PageUtils`, `RequestUtils` from `@wordpress/e2e-test-utils-playwright` |
+| `browser.js` | Launch Chromium with the deterministic context options; build the editor, admin and page helpers |
+| `wp.js` | The handful of WordPress helpers the engine needs (canvas frame, insert/set content through wp.data, preferences, admin navigation, key chords), ported from Gutenberg's Playwright utilities so that package and its Lighthouse/Sentry tail are not dependencies |
 | `site.js` | REST lookups for `{{media.*}}`, `{{post.*}}`, `{{page.*}}` templating; cleanup of content a shot created |
 | `scenes.js` | `new-post`, `new-page`, `post:<slug>`, `page:<slug>`, `admin:<path>`, `site-editor[:<route>]`, `front[:<path>]` |
-| `actions.js` | The step vocabulary; each verb is `(ctx, arg) => Promise<void>`, built on the Gutenberg Playwright utilities so they keep working across releases |
+| `actions.js` | The step vocabulary; each verb is `(ctx, arg) => Promise<void>`, built on the WordPress data stores so they keep working across releases |
 | `locators.js` | Semantic locator keys to Playwright locators; polls the page and the editor canvas frame until one matches |
 | `targets.js` | Named capture targets to locators, one registry so a Gutenberg class rename is fixed in one place |
 | `capture.js` | Settle, compute the clip from target plus `include` plus `pad`, inject annotations, screenshot, hand off to `image.js` |
@@ -108,7 +109,7 @@ Templating in any string value: `{{media.<slug>}}` (attachment ID), `{{media.<sl
 | `type` | `text` or `{text, pace}` | `page.keyboard.type`; pace `human` adds delay |
 | `fill` | `{ <locator key>, value }` | |
 | `select` | `{ <locator key>, option }` | Native `<select>` |
-| `press` | key chord | `Enter`, `Escape`, `primary+k` (via PageUtils) |
+| `press` | key chord | `Enter`, `Escape`, `primary+k` (modifiers resolved for the host OS) |
 | `wait` | `{ for: <target or locator key>, state?: visible\|hidden\|attached }` or a number of ms | |
 | `setViewport` | viewport name or `{width, height}` | |
 | `setPreference` | `{ scope, key, value }` | `core`, `core/edit-post`, `core/edit-site` |

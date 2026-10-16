@@ -1,6 +1,7 @@
 /**
  * The step vocabulary. Every verb is `(ctx, arg) => Promise<void>`; see ARCHITECTURE.md for the table.
- * Verbs lean on `@wordpress/e2e-test-utils-playwright` so Gutenberg keeps them working across releases.
+ * Verbs lean on the WordPress data stores (wp.data, wp.blocks) through wp.js rather than on DOM details, so
+ * they keep working across releases.
  */
 import { resolveLocator, describeKey } from './locators.js';
 import { resolveTarget } from './targets.js';

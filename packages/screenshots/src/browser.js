@@ -1,33 +1,22 @@
 import { resolveViewport } from './style.js';
+import { createWordPressHelpers } from './wp.js';
 
 /**
- * Launch Chromium with deterministic context options and build the Gutenberg Playwright utilities.
+ * Launch Chromium with deterministic context options and build the WordPress helpers (wp.js).
  *
- * `@wordpress/e2e-test-utils-playwright` reads WP_BASE_URL and friends at import time, so the env is set
- * before the dynamic import.
- *
- * @param {Object}                            opts
- * @param {string}                            opts.baseURL
- * @param {Object}                            opts.style
- * @param {{username:string,password:string}} opts.user
- * @param {boolean}                           [opts.headed]
- * @param {string|object}                     [opts.viewport]
+ * @param {Object}        opts
+ * @param {string}        opts.baseURL
+ * @param {Object}        opts.style
+ * @param {boolean}       [opts.headed]
+ * @param {string|object} [opts.viewport]
  */
 export async function launchBrowser( {
 	baseURL,
 	style,
-	user,
 	headed = false,
 	viewport = 'desktop',
 } ) {
-	process.env.WP_BASE_URL = baseURL;
-	process.env.WP_USERNAME = user.username;
-	process.env.WP_PASSWORD = user.password;
-	const [ { chromium }, utils ] = await Promise.all( [
-		import( '@playwright/test' ),
-		import( '@wordpress/e2e-test-utils-playwright' ),
-	] );
-	const { Admin, Editor, PageUtils } = utils;
+	const { chromium } = await import( '@playwright/test' );
 
 	const browser = await chromium.launch( { headless: ! headed } );
 	const context = await browser.newContext( {
@@ -51,9 +40,10 @@ export async function launchBrowser( {
 	const pageErrors = [];
 	page.on( 'pageerror', ( e ) => pageErrors.push( e.message ) );
 
-	const editor = new Editor( { page } );
-	const pageUtils = new PageUtils( { page, browserName: 'chromium' } );
-	const admin = new Admin( { page, pageUtils, editor } );
+	const { editor, admin, pageUtils } = createWordPressHelpers(
+		page,
+		baseURL
+	);
 
 	return {
 		browser,
