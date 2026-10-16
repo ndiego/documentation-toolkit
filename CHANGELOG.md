@@ -21,6 +21,21 @@ Restructured as an npm workspaces monorepo focused on maintaining WordPress.org 
 - `CONVENTIONS.md` moved to `style/`.
 - Added: unit tests (`node --test`), WordPress ESLint and Prettier configuration, a CI workflow, a changelog, and
   engine documentation that lives with the engine (`packages/screenshots/README.md`, `ARCHITECTURE.md`).
+- Screenshots: **presets** (`block-canvas`, `block-toolbar`, `block-settings`, `site-editor`, `post-editor`,
+  `admin-screen`, `front-end`) expand a subject into scene, steps and capture; `wp-screenshots presets` lists
+  them and `wp-screenshots shoot --preset …` renders one image without a spec.
+- Screenshots: **frames**. `frame` takes a canonical ratio (`wide` 16:9, `standard` 4:3, `portrait` 3:4, `banner`
+  3:1) or `auto`; the crop sits on a gradient stage that grows to the ratio. `card` remains; the default is `none`.
+  The manifest records the frame per image.
+- Screenshots: `arrow` annotation; outlines, badges and arrows carry a white halo so WordPress blue stays legible
+  over the editor's own selection outline.
+- Screenshots: `specs` config takes glob patterns, so a repo keeps specs wherever it likes (next to articles or in
+  a mirrored tree). `shotsDir` remains the fallback.
+- Screenshots: site editor scenes use the WordPress 6.8+ `?p=/…` routes (the styles view opened the index
+  template before); `selectBlock` no longer leaves the inline formatting toolbar over blocks with a caption.
+- New package `@wporg-docs/demo-site`: the blueprint, mu-plugin and content pack moved here from the migration
+  repo, now on the Ipsum theme with a `block-image` showcase post.
+- New `style/SCREENSHOTS.md` guideline and `examples/block-editor-handbook/`, a sample project rendered end to end.
 
 ## 0.1.0 (2026-10-13)
 

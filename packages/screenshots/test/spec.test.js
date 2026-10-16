@@ -54,6 +54,7 @@ describe( 'loadSpec', () => {
 		delete shot.specHash;
 		assert.deepEqual( shot, {
 			id: 'hero',
+			preset: null,
 			kind: 'image',
 			alt: 'The Image block',
 			caption: null,
@@ -542,7 +543,7 @@ ${ annotate }
 		);
 		assert.throws(
 			() => load( base( '        - circle: self' ) ),
-			/annotate\[0\]: unknown annotation "circle" \(outline \| badge \| dim\)/
+			/annotate\[0\]: unknown annotation "circle" \(outline \| badge \| arrow \| dim\)/
 		);
 		assert.throws(
 			() => load( base( '        - outline: Replace' ) ),
@@ -577,7 +578,7 @@ ${ extra }
 		);
 		assert.throws(
 			() => load( shot( '    capture: { frame: shadow }' ) ),
-			/unknown frame "shadow" \(plain \| card\)/
+			/unknown frame "shadow" \(plain \| none \| card \| auto \| wide \| standard \| portrait \| banner\)/
 		);
 		assert.throws(
 			() => load( shot( '    capture: { fit: cover }' ) ),
@@ -925,5 +926,181 @@ describe( 'filterSpecs', () => {
 			suite: [ 'default' ],
 		} );
 		assert.deepEqual( articles( out ), [ 'image-block' ] );
+	} );
+} );
+
+describe( 'presets in specs', () => {
+	it( 'expands a preset into scene, steps and capture, with shot keys winning', () => {
+		const spec = load( `
+article: image-block
+shots:
+  - id: canvas
+    preset: block-canvas
+    block: core/image
+    alt: The block
+  - id: custom
+    preset: block-settings
+    block: core/image
+    tab: styles
+    alt: Styles tab
+    steps:
+      - openPanel: Dimensions
+    capture:
+      frame: wide
+      annotate:
+        - outline: { control: Width }
+` );
+		const [ canvas, custom ] = spec.shots;
+		assert.equal( canvas.preset, 'block-canvas' );
+		assert.equal( canvas.scene, 'post:block-image' );
+		assert.deepEqual(
+			canvas.steps.map( ( s ) => [ s.verb, s.arg, s.origin ] ),
+			[ [ 'selectBlock', 'core/image', 'preset' ] ]
+		);
+		assert.equal( canvas.capture.target, 'selected-block' );
+		assert.deepEqual( canvas.capture.include, [ 'block-toolbar' ] );
+		assert.equal( canvas.capture.frame, 'auto' );
+		assert.deepEqual(
+			custom.steps.map( ( s ) => [ s.verb, s.origin ] ),
+			[
+				[ 'selectBlock', 'preset' ],
+				[ 'openInspector', 'preset' ],
+				[ 'openPanel', 'shot' ],
+			]
+		);
+		assert.equal( custom.capture.target, 'inspector' );
+		assert.equal( custom.capture.frame, 'wide' );
+		assert.equal( custom.capture.annotate.length, 1 );
+		assert.notEqual( canvas.specHash, custom.specHash );
+	} );
+
+	it( 'does not inherit defaults into a preset shot', () => {
+		const spec = load( `
+article: image-block
+defaults:
+  scene: new-page
+  steps:
+    - openListView
+shots:
+  - id: one
+    preset: site-editor
+    alt: x
+` );
+		assert.equal( spec.shots[ 0 ].scene, 'site-editor' );
+		assert.deepEqual( spec.shots[ 0 ].steps, [] );
+	} );
+
+	it( 'rejects unknown presets with a suggestion, bad params and stray keys', () => {
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    preset: block-canvs\n    alt: x\n'
+				),
+			/unknown preset "block-canvs" \(did you mean "block-canvas"\?\)/
+		);
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    preset: block-canvas\n    alt: x\n'
+				),
+			/preset block-canvas needs `block`/
+		);
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    preset: site-editor\n    block: core/image\n    alt: x\n'
+				),
+			/unknown key "block"/
+		);
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    preset: block-settings\n    block: core/image\n    tab: layout\n    alt: x\n'
+				),
+			/must be one of content \| settings \| styles/
+		);
+	} );
+} );
+
+describe( 'frames and arrows', () => {
+	it( 'accepts every frame name including auto and rejects others with a suggestion', () => {
+		for ( const frame of [
+			'none',
+			'card',
+			'auto',
+			'wide',
+			'portrait',
+			'plain',
+		] ) {
+			const spec = load(
+				`article: a\nshots:\n  - id: x\n    alt: x\n    capture: { frame: ${ frame } }\n`
+			);
+			assert.equal( spec.shots[ 0 ].capture.frame, frame );
+		}
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    alt: x\n    capture: { frame: portrit }\n'
+				),
+			/unknown frame "portrit" \(did you mean "portrait"\?\)/
+		);
+	} );
+
+	it( 'accepts an arrow with a direction and rejects unknown directions', () => {
+		const spec = load(
+			'article: a\nshots:\n  - id: x\n    alt: x\n    capture:\n      annotate:\n        - arrow: { button: Replace, from: top-left }\n'
+		);
+		assert.deepEqual( spec.shots[ 0 ].capture.annotate[ 0 ], {
+			type: 'arrow',
+			button: 'Replace',
+			from: 'top-left',
+		} );
+		assert.throws(
+			() =>
+				load(
+					'article: a\nshots:\n  - id: x\n    alt: x\n    capture:\n      annotate:\n        - arrow: { button: Replace, from: north }\n'
+				),
+			/from must be one of top \| bottom/
+		);
+	} );
+} );
+
+describe( 'spec discovery with config.specs', () => {
+	it( 'finds specs by glob relative to the config root and reports paths from there', () => {
+		const base = path.join( root, `p${ counter++ }` );
+		const files = {
+			'docs/blocks/image.shots.yaml':
+				'article: image\nshots:\n  - id: a\n    alt: a\n',
+			'docs/site/editor.shots.yaml':
+				'article: editor\nshots:\n  - id: b\n    alt: b\n',
+			'docs/blocks/notes.yaml':
+				'article: ignored\nshots:\n  - id: c\n    alt: c\n',
+		};
+		for ( const [ rel, text ] of Object.entries( files ) ) {
+			fs.mkdirSync( path.dirname( path.join( base, rel ) ), {
+				recursive: true,
+			} );
+			fs.writeFileSync( path.join( base, rel ), text );
+		}
+		const config = {
+			root: base,
+			specs: [ 'docs/**/*.shots.yaml' ],
+			specsBase: base,
+			shotsDir: path.join( base, 'shots' ),
+		};
+		const specs = loadSpecs( config );
+		assert.deepEqual(
+			specs.map( ( s ) => [ s.article, s.relPath ] ),
+			[
+				[ 'image', 'docs/blocks/image.shots.yaml' ],
+				[ 'editor', 'docs/site/editor.shots.yaml' ],
+			]
+		);
+		assert.deepEqual(
+			filterSpecs( specs, { section: [ 'docs/blocks' ] } ).map(
+				( s ) => s.article
+			),
+			[ 'image' ]
+		);
 	} );
 } );

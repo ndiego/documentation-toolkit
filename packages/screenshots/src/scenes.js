@@ -107,22 +107,27 @@ const handlers = {
 		await ctx.page.waitForLoadState( 'domcontentloaded' );
 	},
 	'site-editor': async ( ctx, route ) => {
-		const options = siteEditorOptions( route );
-		await ctx.admin.visitSiteEditor( options );
-		if ( options.canvas === 'edit' || options.postId ) {
-			await ctx.editor.canvas.locator( 'body' ).waitFor();
+		const { p: pathParam, canvas, extra } = siteEditorRoute( route );
+		const query = new URLSearchParams( {
+			p: pathParam,
+			...( extra || {} ),
+		} );
+		if ( canvas ) {
+			query.set( 'canvas', canvas );
 		}
-		if ( route === 'styles' ) {
-			// Open the Styles panel if the route did not already land there.
-			const stylesButton = ctx.page
-				.getByRole( 'button', { name: 'Styles', exact: true } )
-				.first();
-			if (
-				( await stylesButton.count() ) &&
-				! ( await stylesButton.getAttribute( 'aria-pressed' ) )
-			) {
-				await stylesButton.click();
-			}
+		await ctx.admin.visitAdminPage( 'site-editor.php', query.toString() );
+		if ( canvas === 'edit' ) {
+			await ctx.editor.canvas.locator( 'body' ).waitFor();
+			await ctx.page.waitForFunction( () =>
+				window.wp?.data
+					?.select( 'core/editor' )
+					?.__unstableIsEditorReady()
+			);
+		} else {
+			await ctx.page
+				.locator( '.edit-site-layout, .edit-site-sidebar' )
+				.first()
+				.waitFor();
 		}
 	},
 	front: async ( ctx, p ) => {
@@ -131,33 +136,36 @@ const handlers = {
 	},
 };
 
-function siteEditorOptions( route ) {
+/**
+ * Map a scene route to the site editor's `p` route (the `site-editor.php?p=/...` scheme of WordPress 6.8+).
+ * @param {string} route
+ * @return {{p: string, canvas?: string, extra?: Object}} query parts
+ */
+function siteEditorRoute( route ) {
 	if ( ! route || route === 'home' ) {
-		return {};
+		return { p: '/' };
 	}
 	switch ( route.split( ':' )[ 0 ] ) {
 		case 'templates':
-			return { postType: 'wp_template' };
+			return { p: '/template' };
 		case 'parts':
-			return { postType: 'wp_template_part' };
+			return { p: '/pattern', extra: { postType: 'wp_template_part' } };
 		case 'patterns':
-			return { path: '/patterns' };
+			return { p: '/pattern' };
 		case 'navigation':
-			return { postType: 'wp_navigation' };
+			return { p: '/navigation' };
 		case 'pages':
-			return { postType: 'page' };
+			return { p: '/page' };
 		case 'styles':
-			return { path: '/wp_global_styles', canvas: 'edit' };
+			return { p: '/styles' };
 		case 'template':
 			return {
-				postType: 'wp_template',
-				postId: routeValue( route ),
+				p: `/wp_template/${ routeValue( route ) }`,
 				canvas: 'edit',
 			};
 		case 'part':
 			return {
-				postType: 'wp_template_part',
-				postId: routeValue( route ),
+				p: `/wp_template_part/${ routeValue( route ) }`,
 				canvas: 'edit',
 			};
 		default:

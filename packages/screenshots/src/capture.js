@@ -1,7 +1,8 @@
+import sharp from 'sharp';
 import { resolveTarget, isFullViewport, waitForTarget } from './targets.js';
 import { resolveLocator } from './locators.js';
 import { applyAnnotations } from './annotate.js';
-import { encode, frameCard } from './image.js';
+import { encode, frameCard, stage } from './image.js';
 
 /**
  * Park the pointer, wait for fonts, network and layout to settle.
@@ -163,19 +164,30 @@ export async function captureShot( ctx, shot ) {
 		await annotations.remove();
 	}
 
-	const frame = capture.frame || style.frame;
+	let frame = capture.frame || style.frame;
 	if ( frame === 'card' ) {
 		png = await frameCard( png, style, style.deviceScaleFactor );
+	} else if ( frame && frame !== 'none' && frame !== 'plain' ) {
+		const staged = await stage(
+			png,
+			frame,
+			style,
+			style.deviceScaleFactor
+		);
+		png = staged.buffer;
+		frame = staged.frame;
+	} else {
+		frame = 'none';
 	}
 	const { buffer, encoding } = await encode( png, style );
-	const dims = clip
-		? {
-				width: Math.round( clip.width * style.deviceScaleFactor ),
-				height: Math.round( clip.height * style.deviceScaleFactor ),
-			}
-		: {
-				width: vp.width * style.deviceScaleFactor,
-				height: vp.height * style.deviceScaleFactor,
-			};
-	return { buffer, encoding, png, clip, ...dims };
+	const dims = await sharp( png ).metadata();
+	return {
+		buffer,
+		encoding,
+		png,
+		clip,
+		frame,
+		width: dims.width,
+		height: dims.height,
+	};
 }

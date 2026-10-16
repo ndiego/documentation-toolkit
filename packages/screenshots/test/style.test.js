@@ -23,7 +23,7 @@ describe( 'defaultStyle', () => {
 		} );
 		assert.deepEqual( defaultStyle.png, { compressionLevel: 9 } );
 		assert.equal( defaultStyle.clock, null );
-		assert.equal( defaultStyle.frame, 'plain' );
+		assert.equal( defaultStyle.frame, 'none' );
 	} );
 } );
 
@@ -64,6 +64,7 @@ describe( 'mergeStyle', () => {
 			width: 3,
 			radius: 4,
 			gap: 4,
+			halo: { color: '#ffffff', width: 2 },
 		} );
 		assert.equal( style.badge.size, 32 );
 		assert.equal( style.badge.background, '#3858e9' );

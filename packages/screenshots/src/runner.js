@@ -44,6 +44,7 @@ const require = createRequire( import.meta.url );
  * @param {boolean}                       [opts.headed]
  * @param {(msg:string)=>void}            [opts.log]
  * @param {{article:string, shot:string}} [opts.pauseAt] dev mode: pause after this shot's steps
+ * @param {Object[]}                      [opts.specs]   specs to run instead of loading them from disk
  */
 export async function runShots( config, opts = {} ) {
 	const {
@@ -53,7 +54,7 @@ export async function runShots( config, opts = {} ) {
 		log = console.log,
 		pauseAt = null,
 	} = opts;
-	const specs = filterSpecs( loadSpecs( config ), filter );
+	const specs = filterSpecs( opts.specs || loadSpecs( config ), filter );
 	if ( ! specs.length ) {
 		throw Object.assign(
 			new Error(
@@ -248,6 +249,7 @@ export async function runShots( config, opts = {} ) {
 								? existing?.encoding || captured.encoding
 								: captured.encoding,
 							pixelHash: pixelHash( raw ),
+							frame: captured.frame,
 							wordpress: env.versions.wordpress,
 							php: env.versions.php,
 							theme: env.versions.theme || null,

@@ -25,6 +25,9 @@ jobs:
         run: npm test
       - name: Validate the skills and plugin manifest
         run: node scripts/check-skills.js
+      - name: Lint the example project's specs and references (no browser)
+        working-directory: examples/block-editor-handbook
+        run: npx wp-screenshots lint
 
   action:
     name: validate-manifest action self-test

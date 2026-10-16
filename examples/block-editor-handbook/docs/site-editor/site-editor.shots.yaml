@@ -1,0 +1,10 @@
+article: site-editor
+shots:
+  - id: home
+    preset: site-editor
+    alt: The site editor with the Ipsum theme, showing the home template on the canvas and the navigation sidebar.
+
+  - id: styles
+    preset: site-editor
+    view: styles
+    alt: The site editor's Styles view.

@@ -20,17 +20,52 @@ export const defaultStyle = {
 	hideAdminBar: true,
 	// Default padding (CSS px) around an element crop.
 	pad: 16,
-	// Default framing preset: plain | card
-	frame: 'plain',
-	outline: { color: '#3858e9', width: 3, radius: 4, gap: 4 },
+	// Default frame: none | card | auto | wide | standard | portrait | banner (see `frames` and `stage`).
+	frame: 'none',
+	// Canonical aspect ratios (width / height) for documentation images. `auto` picks the one nearest to the
+	// content's own ratio. The content is never scaled; the stage grows around it to reach the ratio.
+	frames: {
+		wide: 16 / 9, // full editor, site editor, admin screens
+		standard: 4 / 3, // modals, popovers, dialogs, blocks on the canvas
+		portrait: 3 / 4, // the inspector and other sidebars
+		banner: 3 / 1, // toolbars and single controls
+	},
+	// The stage behind a framed capture. `background` is a CSS color or a { gradient: [from, to], angle } object.
+	stage: {
+		background: { gradient: [ '#f0f2fb', '#e3e7f7' ], angle: 160 },
+		margin: 40, // minimum space between the capture and the stage edge (CSS px)
+		radius: 8,
+		shadow: { blur: 28, offsetY: 10, color: 'rgba(31, 36, 61, 0.18)' },
+	},
+	// Accent: WordPress blue. The editor's own selection outline is the same blue, so annotations carry a white
+	// halo on both sides of the stroke to stay legible on top of it.
+	accent: '#3858e9',
+	outline: {
+		color: '#3858e9',
+		width: 3,
+		radius: 4,
+		gap: 4,
+		halo: { color: '#ffffff', width: 2 },
+	},
 	badge: {
 		size: 24,
 		background: '#3858e9',
 		color: '#ffffff',
 		font: '600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
 		position: 'top-left',
+		halo: { color: '#ffffff', width: 2 },
+	},
+	arrow: {
+		color: '#3858e9',
+		width: 3,
+		length: 56, // CSS px from the tail to the target's edge
+		head: 12, // arrowhead size
+		gap: 6, // space between the arrowhead tip and the target
+		halo: { color: '#ffffff', width: 2 },
+		from: 'top-right', // default direction the arrow comes from
 	},
 	dim: { color: 'rgba(255, 255, 255, 0.45)' },
+	// Legacy content-sized card (frame: card). Kept for projects that used it; `stage` is the new default look.
 	card: {
 		background: '#f6f7f7',
 		margin: 36,
@@ -67,6 +102,37 @@ export function mergeStyle( overrides = {} ) {
 		}
 	}
 	return out;
+}
+
+/**
+ * The frame names a spec may use: the canonical ratios plus none, card and auto.
+ * @param {Object} style
+ * @return {string[]} frame names
+ */
+export function frameNames( style = defaultStyle ) {
+	return [ 'none', 'card', 'auto', ...Object.keys( style.frames ) ];
+}
+
+/**
+ * Pick the canonical frame whose ratio is nearest to a content size.
+ * @param {Object} style
+ * @param {number} width
+ * @param {number} height
+ * @return {string} a key of `style.frames`
+ */
+export function nearestFrame( style, width, height ) {
+	const ratio = width / Math.max( 1, height );
+	let best = null;
+	let bestDistance = Infinity;
+	for ( const [ name, value ] of Object.entries( style.frames ) ) {
+		// Compare in log space so 2:1 vs 1:1 and 1:1 vs 1:2 are equally far apart.
+		const distance = Math.abs( Math.log( ratio ) - Math.log( value ) );
+		if ( distance < bestDistance ) {
+			bestDistance = distance;
+			best = name;
+		}
+	}
+	return best;
 }
 
 /**

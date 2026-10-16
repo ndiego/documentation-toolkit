@@ -1,0 +1,204 @@
+{
+	"$comment": "Index of what the demo content pack provides. Keys are the CONTRACT (slugs) that shot specs reference as {{media.<slug>}}, {{post.<slug>}}, {{page.<slug>}}. Values are informational and may change when the pack is redesigned. Keep in sync with seed.php.",
+	"pack": "saltmarsh-placeholder",
+	"site": {
+		"blogname": "Saltmarsh",
+		"blogdescription": "Field notes on slow travel, coast paths and the places in between",
+		"show_on_front": "posts"
+	},
+	"media": {
+		"hero": {
+			"file": "media/hero.jpg",
+			"size": "2000x1125",
+			"alt": "A calm lake with reeds in the foreground and green mountains under a bright sky.",
+			"caption": "Morning light over the lake."
+		},
+		"landscape-1": {
+			"file": "media/landscape-1.jpg",
+			"size": "2000x1500",
+			"alt": "Green sea cliffs above a curved sandy beach and turquoise water, seen from above.",
+			"caption": "The cliff path at low tide."
+		},
+		"landscape-2": {
+			"file": "media/landscape-2.jpg",
+			"size": "2000x1500",
+			"alt": "A small island silhouetted against an orange sunset sky over a calm sea.",
+			"caption": "Sunset from the ferry deck."
+		},
+		"landscape-3": {
+			"file": "media/landscape-3.jpg",
+			"size": "2000x1476",
+			"alt": "Rows of green tea bushes among tall trees on rolling hills under an overcast sky.",
+			"caption": "Tea terraces after the rain."
+		},
+		"portrait-1": {
+			"file": "media/portrait-1.jpg",
+			"size": "1500x2000",
+			"alt": "A still pond covered in lily pads, with misty hills in the distance.",
+			"caption": "A quiet pond on the valley trail."
+		},
+		"square-1": {
+			"file": "media/square-1.jpg",
+			"size": "2000x2000",
+			"alt": "Close-up of green leaves covered in raindrops.",
+			"caption": "Raindrops on the path-side leaves."
+		},
+		"site-logo": {
+			"file": "media/site-logo.png",
+			"size": "786x250",
+			"alt": "Saltmarsh",
+			"caption": "",
+			"role": "option site_logo"
+		},
+		"site-icon": {
+			"file": "media/site-icon.png",
+			"size": "512x512",
+			"alt": "Saltmarsh site icon",
+			"caption": "",
+			"role": "option site_icon"
+		},
+		"avatar-default": {
+			"file": "media/avatar-default.png",
+			"size": "256x256",
+			"alt": "Default profile picture",
+			"caption": "",
+			"role": "every avatar (mu-plugin pre_get_avatar_data)"
+		}
+	},
+	"posts": {
+		"post-long": {
+			"title": "A Day on the Coast Path",
+			"status": "publish",
+			"date": "2025-03-20 09:00:00",
+			"author": "author-1",
+			"featured": "hero",
+			"categories": [ "guides", "travel" ],
+			"tags": [ "hiking", "coast", "planning" ],
+			"blocks": [
+				"paragraph",
+				"heading",
+				"image (landscape-1)",
+				"list",
+				"quote",
+				"gallery (landscape-1..3)",
+				"buttons",
+				"separator",
+				"cover (landscape-2)",
+				"columns",
+				"table"
+			],
+			"comments": "3 approved (1 reply), 1 pending, 1 spam"
+		},
+		"post-short": {
+			"title": "Ferry Timetables for the Spring",
+			"status": "publish",
+			"date": "2025-02-12 09:00:00",
+			"author": "author-2",
+			"featured": "landscape-2",
+			"categories": [ "news" ]
+		},
+		"post-draft": {
+			"title": "Notes for the Autumn Guide",
+			"status": "draft",
+			"date": "2025-03-25 09:00:00",
+			"author": "author-1",
+			"categories": [ "guides" ]
+		},
+		"winter-walking-checklist": {
+			"status": "publish",
+			"date": "2025-01-05 09:00:00",
+			"author": "admin",
+			"featured": "landscape-2"
+		},
+		"new-photo-prints-available": {
+			"status": "publish",
+			"date": "2024-11-10 09:00:00",
+			"author": "author-2",
+			"featured": "landscape-3"
+		},
+		"a-beginners-guide-to-tide-tables": {
+			"status": "publish",
+			"date": "2024-07-22 09:00:00",
+			"author": "author-1",
+			"featured": "landscape-1"
+		},
+		"five-quiet-beaches": {
+			"status": "publish",
+			"date": "2024-02-18 09:00:00",
+			"author": "author-2",
+			"featured": "landscape-2"
+		},
+		"the-tea-hills-in-the-rain": {
+			"status": "publish",
+			"date": "2023-09-03 09:00:00",
+			"author": "author-1",
+			"featured": "landscape-3"
+		},
+		"packing-light-for-a-weekend": {
+			"status": "publish",
+			"date": "2023-05-14 09:00:00",
+			"author": "admin",
+			"featured": "landscape-1"
+		}
+	},
+	"pages": {
+		"sample-page": {
+			"title": "Sample Page"
+		},
+		"about": {
+			"title": "About",
+			"contains": "text + image (portrait-1)"
+		},
+		"contact": {
+			"title": "Contact"
+		},
+		"home": {
+			"title": "Home",
+			"note": "not assigned; set show_on_front=page and page_on_front to use it"
+		},
+		"blog": {
+			"title": "Blog",
+			"note": "not assigned; set page_for_posts to use it"
+		}
+	},
+	"users": {
+		"admin": {
+			"display_name": "admin",
+			"role": "administrator",
+			"password": "password"
+		},
+		"author-1": {
+			"display_name": "Maya Lindqvist",
+			"role": "author",
+			"password": "password"
+		},
+		"author-2": {
+			"display_name": "Theo Marchetti",
+			"role": "editor",
+			"password": "password"
+		}
+	},
+	"terms": {
+		"category": [ "guides", "news", "travel", "uncategorized" ],
+		"post_tag": [ "hiking", "coast", "photography", "planning", "gear" ]
+	},
+	"navigation": {
+		"main": {
+			"post_type": "wp_navigation",
+			"title": "Main",
+			"items": [
+				"Home",
+				"About",
+				"Topics > (Guides, Travel, News)",
+				"Contact"
+			]
+		}
+	},
+	"blocks": {
+		"block-image": {
+			"block": "core/image",
+			"post": "block-image",
+			"note": "Image block (hero) with a caption between two paragraphs; the subject of the block-* presets."
+		}
+	}
+}

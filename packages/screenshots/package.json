@@ -27,8 +27,7 @@
 	"files": [
 		"src",
 		"README.md",
-		"ARCHITECTURE.md",
-		"CHANGELOG.md"
+		"ARCHITECTURE.md"
 	],
 	"engines": {
 		"node": ">=22.19"

@@ -1,0 +1,34 @@
+# Screenshots for docs/blocks/image-block.md. Each shot names a subject (a preset); the engine supplies the scene,
+# steps and framing the house style has settled on. Shot keys override the preset where needed.
+article: image-block
+shots:
+  - id: canvas
+    preset: block-canvas
+    block: core/image
+    alt: An Image block on the editor canvas, selected, showing a photo of a lake at sunrise with a caption below it.
+
+  - id: toolbar
+    preset: block-toolbar
+    block: core/image
+    alt: The Image block toolbar, with an arrow pointing at the Replace button.
+    capture:
+      annotate:
+        - arrow: { button: Replace, from: top }
+
+  - id: settings
+    preset: block-settings
+    block: core/image
+    tab: settings
+    alt: The Image block's Settings tab in the block inspector, with the Resolution setting outlined.
+    capture:
+      annotate:
+        - outline: { control: Resolution }
+
+  - id: alt-text
+    preset: block-settings
+    block: core/image
+    tab: content
+    alt: The Image block's Content tab in the block inspector, where the alternative text field lives.
+    capture:
+      annotate:
+        - outline: { control: Alternative text }

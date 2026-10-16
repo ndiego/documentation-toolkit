@@ -10,6 +10,26 @@ project-specific parts: `shots.config.js`, a Playground `blueprint/`, and YAML s
 engine's `README.md` (commands, spec format) and `ARCHITECTURE.md` (the contract between engine and project) in
 `packages/screenshots/` of the toolkit, and the project's own README for its paths and demo-site slugs.
 
+## Start from a subject
+
+Most requests are one of a few subjects. Write the shot with a preset and let the engine supply scene, steps and
+framing; override only what the request needs. `npx wp-screenshots presets` lists presets and parameters.
+
+- "the Image block on the canvas" → `preset: block-canvas`, `block: core/image`
+- "its settings panel" / "the Styles tab" → `preset: block-settings`, `block`, `tab: settings | styles | content`
+- "the block toolbar" → `preset: block-toolbar`
+- "a screenshot of the site editor" / "the Styles view" → `preset: site-editor` [, `view: styles`]
+- "the Plugins screen" → `preset: admin-screen`, `screen: plugins.php`
+- one image right now, no spec: `npx wp-screenshots shoot --preset site-editor --out site-editor.webp`
+
+Highlight with one annotation type per image: `outline` by default, `arrow` when the target is small or has
+lookalikes, numbered `badge` for enumerated steps, `dim` for noisy surroundings. Read `style/SCREENSHOTS.md` in the
+toolkit for the frames, the annotation style and the text-in-images preference (minimal by default, "no text" or
+"full" on request).
+
+Block presets expect the demo site to hold a showcase post `block-<name>` for the block; when it does not, pass
+`post: new` (inserts the block into a fresh post) or write the steps by hand.
+
 ## Commands (run from the project directory, the one holding `shots.config.js`)
 
 - `npx wp-screenshots lint` validates specs, cross-checks Markdown image references and finds orphans. No browser
@@ -35,4 +55,7 @@ engine's `README.md` (commands, spec format) and `ARCHITECTURE.md` (the contract
   image in sync.
 - Nothing in the engine may know a project's slugs or paths. Project facts go in `shots.config.js`; content is
   resolved against the running demo site by slug (`{{media.<slug>}}`, `{{post.<slug>}}`).
-- Specs fail fast on unknown keys, verbs, scenes, targets and locator keys, so run `lint` after editing a spec.
+- Specs fail fast on unknown keys, verbs, scenes, targets, frames, presets and locator keys, so run `lint` after
+  editing a spec.
+- Look at the image after rendering (convert WebP to PNG if needed). Check: nothing cut off, no stray popovers or
+  inline toolbars, the annotation points at the right element, the frame suits the subject.

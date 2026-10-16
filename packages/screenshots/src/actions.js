@@ -30,7 +30,16 @@ export const actions = {
 			.locator( `[data-type="${ name }"]` )
 			.nth( nth );
 		await block.waitFor();
-		await ctx.editor.selectBlocks( block );
+		// Select through the store with no caret position: placing a caret (what a click or the default
+		// selectBlock does) focuses the block's first rich text, and a caption or heading then shows its
+		// inline formatting toolbar over the block. Focus the wrapper so keyboard steps still have a home.
+		const clientId = await block.getAttribute( 'data-block' );
+		await ctx.page.evaluate( ( id ) => {
+			window.wp.data
+				.dispatch( 'core/block-editor' )
+				.selectBlock( id, null );
+		}, clientId );
+		await block.evaluate( ( el ) => el.focus() );
 		await ctx.editor.showBlockToolbar();
 		await ctx.editor.canvas
 			.locator( '.block-editor-block-list__block.is-selected' )

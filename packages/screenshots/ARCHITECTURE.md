@@ -31,7 +31,8 @@ WordPress version, style tokens) and does the rest. Rules that keep that true:
 |---|---|
 | `cli.js` | `wp-screenshots run\|check\|update\|lint\|snippet\|dev\|doctor\|list\|vocab`, argument parsing, exit codes |
 | `config.js` | Load `shots.config.js` (nearest one from the cwd, or `--config`), apply defaults, resolve paths |
-| `spec.js` | Load and validate YAML specs; expand `defaults`; reject unknown keys, verbs, scenes, targets and locator keys with a "did you mean"; compute spec hashes |
+| `spec.js` | Discover specs (`config.specs` globs or `shotsDir`), load and validate YAML; expand `defaults` and presets; reject unknown keys, verbs, scenes, targets, frames, presets and locator keys with a "did you mean"; compute spec hashes |
+| `presets.js` | Subjects (`block-canvas`, `block-settings`, `site-editor`, …) expanded into scene, steps and capture; parameter validation; the table `wp-screenshots presets` prints |
 | `env/playground.js` | Start and stop `@wp-playground/cli server` from a blueprint, wait for the "Ready!" line (the HTTP server answers before the blueprint seed finishes), assert the booted WordPress and PHP versions |
 | `browser.js` | Launch Chromium with the deterministic context options; build `Admin`, `Editor`, `PageUtils`, `RequestUtils` from `@wordpress/e2e-test-utils-playwright` |
 | `site.js` | REST lookups for `{{media.*}}`, `{{post.*}}`, `{{page.*}}` templating; cleanup of content a shot created |
@@ -40,8 +41,8 @@ WordPress version, style tokens) and does the rest. Rules that keep that true:
 | `locators.js` | Semantic locator keys to Playwright locators; polls the page and the editor canvas frame until one matches |
 | `targets.js` | Named capture targets to locators, one registry so a Gutenberg class rename is fixed in one place |
 | `capture.js` | Settle, compute the clip from target plus `include` plus `pad`, inject annotations, screenshot, hand off to `image.js` |
-| `annotate.js` | Overlay drawn in the top document from element bounding boxes: `outline`, `badge`, `dim` |
-| `image.js` | sharp: frame presets, WebP/PNG encode, decode for compare; pixel compare via pixelmatch |
+| `annotate.js` | Overlay drawn in the top document from element bounding boxes: `outline`, `arrow`, `badge`, `dim`, each with a halo |
+| `image.js` | sharp: the stage (canonical ratios, gradient background, shadow, rounded corners) and the legacy card, WebP/PNG encode, decode for compare; pixel compare via pixelmatch |
 | `manifest.js` | Read and write the output manifest; touch only entries whose pixels or metadata changed |
 | `lint.js` | Spec, alt text, orphan and reference checks against the docs tree; `--fix` for alt text; `snippet` |
 | `report.js` | HTML before/after/diff report for `check`; `update` applies the staged images and manifest entries |
@@ -61,6 +62,7 @@ defaults:                        # optional; merged into every shot
   viewport: desktop
 shots:
   - id: toolbar-replace          # required; file name. [a-z0-9-]+
+    preset: block-toolbar        # optional; a subject from presets.js. Its params (block, post, …) are shot keys
     alt: ...                     # required; the Markdown alt text
     caption: ...                 # optional; italic caption line under the image
     scene: new-post              # see scenes
@@ -72,9 +74,10 @@ shots:
       include: [selected-block]  # optional; extend the clip to cover these targets too
       pad: 16                    # CSS px; default from style
       fit: content               # optional; clip a tall target's bottom to its last visible child
-      frame: plain               # plain | card
+      frame: auto                # none | card | auto | wide | standard | portrait | banner (style.frames)
       annotate:
         - outline: { button: Replace }
+        - arrow: { button: Replace, from: top }
         - badge: { label: 1, control: Alternative text }
         - dim: { target: inspector }
       mask: [ { selector: ".some-dynamic" } ]
@@ -125,14 +128,23 @@ one has a match, unless `in: canvas` or `in: page` is given; `within: <target>` 
 `site-editor-canvas`, `admin-content`, `admin-screen`, `admin-menu`, `front`. Anything that looks like a CSS
 selector (starts with `.`, `#`, `[` or contains a combinator) is used as one; anything else is rejected at load.
 
+## Frames and the stage
+
+`frame` names one of `style.frames` (`wide` 16:9, `standard` 4:3, `portrait` 3:4, `banner` 3:1), `auto` for the
+ratio nearest to the crop, `none` for the bare crop, or `card` for the older content-sized card. `image.js`
+composes the stage: the crop is never scaled; the canvas grows to the ratio with at least `stage.margin` on every
+side, the crop sits centred on a gradient or solid background with a blurred shadow and rounded corners. The name
+of the frame used (`auto` resolved) is recorded per image in the manifest. The reasoning behind the ratios is in
+the toolkit's `style/SCREENSHOTS.md`.
+
 ## Output
 
 - `<outDir>/<article>/<id>.webp`. Lossless WebP when the result fits `style.webp.maxBytes` (300 KB by default; UI
   crops land at 10–50 KB) and lossy at `style.webp.quality` (90) above it, because lossless WebP of a photo-heavy
   2x editor shot is larger than PNG. Both encodings are deterministic. The manifest records `encoding` per image.
 - `<outDir>/manifest.json`: `{ "version": 1, "shots": { "<article>/<id>": { file, article, alt, caption, suite,
-  kind, wordpress, php, theme, specHash, blueprintHash, playwright, chromium, platform, canonical, capturedAt,
-  width, height, bytes, encoding, pixelHash } } }`, keys sorted. An entry changes only when the pixels change, the
+  kind, frame, wordpress, php, theme, specHash, blueprintHash, playwright, chromium, platform, canonical,
+  capturedAt, width, height, bytes, encoding, pixelHash } } }`, keys sorted. An entry changes only when the pixels change, the
   spec metadata changes, or a field is missing.
 - Images are compared pixel for pixel against the committed file before writing; identical pixels leave the file
   untouched so git shows no churn.
@@ -154,6 +166,12 @@ to `GET /wp-json/`; the engine prefers it over the generator tag when asserting 
 
 ## Known behaviour worth keeping in mind
 
+- WordPress 6.8+ routes the site editor through `site-editor.php?p=/…` (`/styles`, `/template`, `/pattern`,
+  `/navigation`, `/page`; `/wp_template/<theme>//<slug>&canvas=edit` to edit). `scenes.js` builds those URLs
+  itself; the Gutenberg Playwright utility still emits the pre-6.8 query parameters.
+- Selecting a block with a caret (a click, or the store's default `selectBlock`) focuses its first rich text and
+  pops the inline formatting toolbar over the block. `selectBlock` selects through the store with no caret
+  position and focuses the block wrapper instead.
 - A fixed Playwright clock stalls Gutenberg's debounces, so the engine never uses `setFixedTime`.
 - The Playground server answers HTTP a few seconds before the blueprint seed finishes; the engine waits for the
   CLI's "Ready!" line.

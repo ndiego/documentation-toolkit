@@ -7,14 +7,16 @@ import { sceneNames, parseScene } from './scenes.js';
 import { validateTargetName } from './targets.js';
 import { validateLocatorKey } from './locators.js';
 import { walk } from './files.js';
+import { frameNames } from './style.js';
+import { expandPreset, presetNames, presetParamNames } from './presets.js';
 
 const ID_RE = /^[a-z0-9][a-z0-9-]*$/;
 const KINDS = new Set( [ 'image', 'clip' ] );
-const FRAMES = new Set( [ 'plain', 'card' ] );
 const FILE_KEYS = [ 'article', 'suite', 'defaults', 'shots' ];
 const DEFAULT_KEYS = [ 'scene', 'viewport', 'steps', 'capture' ];
 const SHOT_KEYS = [
 	'id',
+	'preset',
 	'alt',
 	'caption',
 	'kind',
@@ -34,7 +36,17 @@ const CAPTURE_KEYS = [
 	'annotate',
 	'mask',
 ];
-const ANNOTATION_TYPES = [ 'outline', 'badge', 'dim' ];
+const ANNOTATION_TYPES = [ 'outline', 'badge', 'arrow', 'dim' ];
+const DIRECTIONS = [
+	'top',
+	'bottom',
+	'left',
+	'right',
+	'top-left',
+	'top-right',
+	'bottom-left',
+	'bottom-right',
+];
 // Verbs whose argument is a locator key (validated at load time).
 const LOCATOR_VERBS = [ 'click', 'hover', 'scrollTo' ];
 
@@ -51,9 +63,13 @@ export class SpecError extends Error {
  * @param {Object} config
  */
 export function loadSpecs( config ) {
-	const files = walk( config.shotsDir )
-		.filter( ( f ) => /\.ya?ml$/.test( f ) )
-		.sort();
+	const files = (
+		config.specs
+			? fs
+					.globSync( config.specs, { cwd: config.root } )
+					.map( ( f ) => path.resolve( config.root, f ) )
+			: walk( config.shotsDir ).filter( ( f ) => /\.ya?ml$/.test( f ) )
+	).sort();
 	const specs = files.map( ( file ) => loadSpec( file, config ) );
 	const seen = new Map();
 	for ( const spec of specs ) {
@@ -62,7 +78,7 @@ export function loadSpecs( config ) {
 			if ( seen.has( key ) ) {
 				throw new SpecError(
 					spec.file,
-					`shot "${ key }" is also defined in ${ path.relative( config.shotsDir, seen.get( key ) ) }`
+					`shot "${ key }" is also defined in ${ path.relative( specsBase( config ), seen.get( key ) ) }`
 				);
 			}
 			seen.set( key, spec.file );
@@ -114,7 +130,30 @@ export function loadSpec( file, config ) {
 		if ( ! shot || typeof shot !== 'object' ) {
 			throw new SpecError( file, `${ where } must be a mapping` );
 		}
-		checkKeys( file, where, shot, SHOT_KEYS );
+		let preset = null;
+		if ( shot.preset !== undefined ) {
+			if (
+				typeof shot.preset !== 'string' ||
+				! presetNames.includes( shot.preset )
+			) {
+				throw new SpecError(
+					file,
+					`${ where }: unknown preset "${ shot.preset }"${ suggest( shot.preset, presetNames ) }. Known: ${ presetNames.join( ', ' ) }`
+				);
+			}
+			const paramNames = presetParamNames( shot.preset );
+			checkKeys( file, where, shot, [ ...SHOT_KEYS, ...paramNames ] );
+			const params = Object.fromEntries(
+				paramNames.map( ( k ) => [ k, shot[ k ] ] )
+			);
+			try {
+				preset = expandPreset( shot.preset, params );
+			} catch ( e ) {
+				throw new SpecError( file, `${ where }: ${ e.message }` );
+			}
+		} else {
+			checkKeys( file, where, shot, SHOT_KEYS );
+		}
 		if ( ! shot.id || ! ID_RE.test( String( shot.id ) ) ) {
 			throw new SpecError(
 				file,
@@ -139,17 +178,26 @@ export function loadSpec( file, config ) {
 			);
 		}
 		// Default steps belong to the default scene: a shot that uses another scene does not inherit them.
-		const scene = shot.scene || defaultScene;
+		// A preset supplies its own starting state, so it inherits nothing from `defaults`.
+		const scene = shot.scene || preset?.scene || defaultScene;
 		checkScene( file, where, scene );
-		const inherited = scene === defaultScene ? defaultSteps : [];
+		const inherited =
+			! preset && scene === defaultScene ? defaultSteps : [];
 		const steps = [
 			...inherited,
+			...normaliseSteps( file, where, preset?.steps || [], 'preset' ),
 			...normaliseSteps( file, where, shot.steps || [], 'shot' ),
 		];
-		const capture = normaliseCapture( file, where, {
-			...( defaults.capture || {} ),
-			...( shot.capture || {} ),
-		} );
+		const capture = normaliseCapture(
+			file,
+			where,
+			{
+				...( preset ? {} : defaults.capture || {} ),
+				...( preset?.capture || {} ),
+				...( shot.capture || {} ),
+			},
+			config
+		);
 		let script = null;
 		if ( shot.script ) {
 			script = path.resolve( path.dirname( file ), shot.script );
@@ -162,6 +210,7 @@ export function loadSpec( file, config ) {
 		}
 		const normalised = {
 			id: shot.id,
+			preset: shot.preset || null,
 			kind,
 			alt: shot.alt.trim(),
 			caption:
@@ -178,11 +227,15 @@ export function loadSpec( file, config ) {
 	} );
 	return {
 		file,
-		relPath: path.relative( config.shotsDir, file ),
+		relPath: path.relative( specsBase( config ), file ),
 		article: raw.article,
 		suite: raw.suite || 'default',
 		shots,
 	};
+}
+
+function specsBase( config ) {
+	return config.specsBase || config.shotsDir;
 }
 
 function checkKeys( file, where, obj, allowed ) {
@@ -256,7 +309,7 @@ function normaliseSteps( file, where, steps, origin ) {
 	} );
 }
 
-function normaliseCapture( file, where, capture ) {
+function normaliseCapture( file, where, capture, config ) {
 	checkKeys( file, `${ where } capture`, capture, CAPTURE_KEYS );
 	const targetProblem = validateTargetName( capture.target );
 	if ( targetProblem ) {
@@ -293,7 +346,13 @@ function normaliseCapture( file, where, capture ) {
 				`${ where } capture.annotate[${ i }] (${ type }): give it a locator ({ button: Replace }), a { target: name }, or "self"`
 			);
 		}
-		const { target, label, position, ...locatorKey } = value;
+		const { target, label, position, from, ...locatorKey } = value;
+		if ( from !== undefined && ! DIRECTIONS.includes( from ) ) {
+			throw new SpecError(
+				file,
+				`${ where } capture.annotate[${ i }] (${ type }): from must be one of ${ DIRECTIONS.join( ' | ' ) }`
+			);
+		}
 		if ( target !== undefined ) {
 			const p = validateTargetName( target );
 			if ( p ) {
@@ -352,10 +411,11 @@ function normaliseCapture( file, where, capture ) {
 			`${ where } capture: pad must be a number of CSS pixels`
 		);
 	}
-	if ( out.frame && ! FRAMES.has( out.frame ) ) {
+	const frames = [ 'plain', ...frameNames( config?.style ) ];
+	if ( out.frame && ! frames.includes( out.frame ) ) {
 		throw new SpecError(
 			file,
-			`${ where } capture: unknown frame "${ out.frame }" (plain | card)`
+			`${ where } capture: unknown frame "${ out.frame }"${ suggest( out.frame, frames ) } (${ frames.join( ' | ' ) })`
 		);
 	}
 	if ( out.fit && out.fit !== 'content' ) {
@@ -411,6 +471,7 @@ function levenshtein( a, b ) {
 
 function hashShot( shot ) {
 	const material = {
+		preset: shot.preset,
 		scene: shot.scene,
 		viewport: shot.viewport,
 		steps: shot.steps.map( ( { verb, arg } ) => ( { verb, arg } ) ),

@@ -7,10 +7,12 @@ import { runShots } from './runner.js';
 import { lint, snippet } from './lint.js';
 import { writeReport, acceptStaged } from './report.js';
 import { runInDocker } from './docker.js';
-import { loadSpecs, filterSpecs } from './spec.js';
+import { loadSpecs, filterSpecs, loadSpec } from './spec.js';
 import { verbNames } from './actions.js';
 import { targetNames } from './targets.js';
 import { sceneNames } from './scenes.js';
+import { presets, presetNames } from './presets.js';
+import os from 'node:os';
 
 const HELP = `wp-screenshots: reproducible WordPress UI screenshots from YAML specs
 
@@ -23,6 +25,8 @@ Commands
   lint      Validate specs and cross-check generated images against the Markdown
   snippet   Print Markdown image lines for an article (--article x [--from docs/path/file.md])
   dev       Open a headed browser, run a shot's scene and steps, then pause in the Playwright Inspector
+  shoot     Render one shot from a preset without a spec file (--preset <name> [--<param> <value>] [--out <file>])
+  presets   List the presets (subjects) a shot can be built from, with their parameters
   doctor    Check the local setup
   list      List specs and shots
   vocab     List the scenes, step verbs and capture targets specs can use
@@ -175,6 +179,29 @@ async function main() {
 			}
 			return 0;
 		}
+		case 'presets': {
+			for ( const name of presetNames ) {
+				const preset = presets[ name ];
+				console.log( `${ name }\n  ${ preset.description }` );
+				for ( const [ param, def ] of Object.entries(
+					preset.params
+				) ) {
+					const notes = [
+						def.required ? 'required' : null,
+						def.default ? `default ${ def.default }` : null,
+						def.options ? def.options.join( ' | ' ) : null,
+					]
+						.filter( Boolean )
+						.join( ', ' );
+					console.log(
+						`    ${ param }${ notes ? ` (${ notes })` : '' }: ${ def.description }`
+					);
+				}
+			}
+			return 0;
+		}
+		case 'shoot':
+			return shoot( config, flags );
 		case 'doctor':
 			return ( await doctor( config ) ) ? 0 : 1;
 		case 'vocab':
@@ -186,6 +213,73 @@ async function main() {
 			console.error( `Unknown command "${ command }".\n${ HELP }` );
 			return 2;
 	}
+}
+
+/**
+ * Render one shot from a preset without writing a spec file: build a one-shot spec in a temp directory, run it
+ * into a temp output dir, and copy the image where asked (default: ./<preset>.<ext> in the cwd).
+ * @param {Object} config
+ * @param {Object} options
+ */
+async function shoot( config, options ) {
+	const name = options.preset;
+	if ( ! name || ! presetNames.includes( name ) ) {
+		throw new UserError(
+			`shoot needs --preset <name>. Known presets: ${ presetNames.join( ', ' ) } (run \`wp-screenshots presets\`).`
+		);
+	}
+	const params = {};
+	for ( const param of Object.keys( presets[ name ].params ) ) {
+		if ( options[ param ] !== undefined ) {
+			params[ param ] = String( options[ param ] );
+		}
+	}
+	const id = String( options.id || name );
+	const alt = String( options.alt || `${ name } screenshot` );
+	const tmp = fs.mkdtempSync(
+		path.join( os.tmpdir(), 'wp-screenshots-shoot-' )
+	);
+	const specFile = path.join( tmp, 'shoot.yaml' );
+	const body = [
+		'article: adhoc',
+		'shots:',
+		`  - id: ${ JSON.stringify( id ) }`,
+		`    preset: ${ name }`,
+		`    alt: ${ JSON.stringify( alt ) }`,
+		...Object.entries( params ).map(
+			( [ k, v ] ) => `    ${ k }: ${ JSON.stringify( v ) }`
+		),
+		...( options.frame
+			? [
+					`    capture: { frame: ${ JSON.stringify( String( options.frame ) ) } }`,
+				]
+			: [] ),
+	].join( '\n' );
+	fs.writeFileSync( specFile, body + '\n' );
+	const adhoc = {
+		...config,
+		outDir: path.join( tmp, 'out' ),
+		workDir: path.join( tmp, 'work' ),
+		docsDir: null,
+		docsManifest: null,
+	};
+	const spec = loadSpec( specFile, { ...adhoc, specsBase: tmp } );
+	const { summary } = await runShots( adhoc, {
+		specs: [ spec ],
+		mode: 'run',
+		headed: Boolean( options.headed ),
+	} );
+	if ( summary.failed ) {
+		return 1;
+	}
+	const ext = config.style.format === 'png' ? 'png' : 'webp';
+	const produced = path.join( adhoc.outDir, 'adhoc', `${ id }.${ ext }` );
+	const out = path.resolve( String( options.out || `${ id }.${ ext }` ) );
+	fs.mkdirSync( path.dirname( out ), { recursive: true } );
+	fs.copyFileSync( produced, out );
+	console.log( `Wrote ${ path.relative( process.cwd(), out ) || out }` );
+	fs.rmSync( tmp, { recursive: true, force: true } );
+	return 0;
 }
 
 async function doctor( config ) {

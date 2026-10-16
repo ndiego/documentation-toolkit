@@ -42,14 +42,19 @@ Then, in the project directory: `npm install` and `npx wp-screenshots doctor`.
 Run from the project directory (or pass `--config path/to/shots.config.js`).
 
 ```sh
-wp-screenshots run [--article <slug>] [--section <shots/sub/path>] [--suite <name>] [--shot <id>]
+wp-screenshots run [--article <slug>] [--section <path>] [--suite <name>] [--shot <id>]
 wp-screenshots check [filters] [--docker]   # render to a staging dir, diff against committed images, HTML report
 wp-screenshots update                       # accept the images and manifest entries the last check staged
 wp-screenshots lint [--fix]                 # specs, Markdown references, orphans; --fix rewrites alt text
+wp-screenshots shoot --preset <name> [--<param> <value>] [--frame <frame>] [--out <file>]   # one image, no spec
+wp-screenshots presets                      # the subjects a shot can be built from, with their parameters
 wp-screenshots snippet --article <slug> [--from docs/path/file.md]
 wp-screenshots dev --article <slug> --shot <id>   # headed browser, pauses in the Playwright Inspector
 wp-screenshots doctor | list | vocab
 ```
+
+`shoot` is the "just give me one" path: `wp-screenshots shoot --preset site-editor --out site-editor.webp`
+renders a single image from a preset without a spec file.
 
 | Command | What it does |
 |---|---|
@@ -67,7 +72,10 @@ Paths are relative to the config file.
 
 ```js
 export default {
-	shotsDir: 'shots',                      // YAML specs
+	// Where the specs are: glob patterns relative to this file. Keep them next to their articles
+	// (`docs/**/*.shots.yaml`) or in a mirrored tree (`shots/**/*.yaml`); the engine only needs the pattern.
+	specs: [ 'docs/**/*.shots.yaml' ],
+	shotsDir: 'shots',                      // used only when `specs` is not set: every YAML file under it
 	outDir: '../docs/assets/screenshots',   // generated images and manifest.json
 	docsDir: '../docs',                     // Markdown tree lint cross-checks
 	docsManifest: '../docs/manifest.json',  // optional: article slugs must exist here
@@ -86,8 +94,47 @@ Keep `dockerImage`, `@playwright/test` in this package, and your CI image at the
 
 ## Writing a shot
 
-One YAML file per article under `shotsDir`. The file name does not matter; `article` is the output folder (and,
-when `docsManifest` is set, must be a slug in it). Images land at `<outDir>/<article>/<id>.webp`.
+One YAML file per article, found through `specs`. The file name does not matter; `article` is the output folder
+(and, when `docsManifest` is set, must be a slug in it). Images land at `<outDir>/<article>/<id>.webp`.
+
+### From a preset
+
+Most documentation screenshots are one of a few subjects. A preset names the subject and the engine supplies the
+scene, the steps, the capture target and the frame the house style settled on (see `style/SCREENSHOTS.md` in the
+toolkit). Any key set on the shot overrides what the preset filled in; shot steps run after the preset's.
+
+```yaml
+article: image-block
+shots:
+  - id: canvas
+    preset: block-canvas
+    block: core/image
+    alt: An Image block on the editor canvas, selected, showing a photo of a lake with a caption below it.
+  - id: settings
+    preset: block-settings
+    block: core/image
+    tab: settings
+    alt: The Image block's Settings tab, with the Resolution setting outlined.
+    capture:
+      annotate:
+        - outline: { control: Resolution }
+```
+
+| Preset | Parameters | Shows |
+|---|---|---|
+| `block-canvas` | `block` (required), `post` | A block on the canvas, selected, with its toolbar |
+| `block-toolbar` | `block`, `post` | The block's toolbar |
+| `block-settings` | `block`, `post`, `tab` (content, settings, styles), `panel` | The inspector on a tab |
+| `site-editor` | `view` | The site editor home or a view (templates, parts, patterns, navigation, pages, styles, template:…, part:…) |
+| `post-editor` | `post` | The whole post editor |
+| `admin-screen` | `screen` (required) | A wp-admin screen |
+| `front-end` | `path` | The public site |
+
+Block presets open the demo site's showcase post `block-<name>` (`block-image` for `core/image`), which holds a
+representative instance of the block. `post: new` inserts the block into a fresh post instead; `post: <slug>` opens
+another post. `wp-screenshots presets` prints this table from the source of truth.
+
+### By hand
 
 ```yaml
 article: image-block
@@ -122,7 +169,12 @@ shots:
   `inspector`, `inspector-panel:<name>`, `inserter`, `list-view`, `top-bar`, `popover`, `modal`,
   `admin-content`, `admin-screen`, `front`, or a CSS selector. `include:` widens the crop, `pad:` adds space,
   `fit: content` trims a tall panel, `frame: card` puts a full-editor shot on a card.
-- **Annotations** anchor to elements, never to pixels: `outline`, numbered `badge`, `dim`.
+- **Annotations** anchor to elements, never to pixels: `outline`, `arrow` (with `from: top | bottom | left |
+  right | top-left | …`), numbered `badge`, `dim`. WordPress blue with a white halo so they stay legible over the
+  editor's own selection outline.
+- **Frames** put the crop on a stage with a canonical ratio: `wide` 16:9, `standard` 4:3, `portrait` 3:4,
+  `banner` 3:1, `auto` (nearest to the content), `none`, or the content-sized `card`. The content is never scaled;
+  the stage grows to the ratio. The manifest records the frame used.
 - **Templating** resolves against the running demo site by slug: `{{media.<slug>}}`, `{{media.<slug>.url}}`,
   `{{media.<slug>.alt}}`, `{{post.<slug>}}`, `{{page.<slug>}}`, `{{site.url}}`. The project's blueprint README
   is the contract for which slugs exist.

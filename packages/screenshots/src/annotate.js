@@ -16,8 +16,8 @@ const OVERLAY_ID = 'wp-screenshots-overlay';
  * @param {import('@playwright/test').Locator|null} targetLocator
  */
 async function boxFor( ctx, annotation, targetLocator ) {
-	// `label` and `position` style the badge; everything else is the locator key.
-	const { type, self, target, label, position, ...key } = annotation;
+	// `label` and `position` style the badge, `from` the arrow; everything else is the locator key.
+	const { type, self, target, label, position, from, ...key } = annotation;
 	let loc;
 	if ( self ) {
 		loc = targetLocator;
@@ -67,6 +67,7 @@ export async function applyAnnotations( ctx, annotations, targetLocator ) {
 					? String( a.label )
 					: String( badgeCounter ),
 			position: a.position || style.badge.position,
+			from: a.from || style.arrow.from,
 		} );
 	}
 	const boxes = await ctx.page.evaluate(
@@ -87,6 +88,7 @@ export async function applyAnnotations( ctx, annotations, targetLocator ) {
 					const o = s.outline;
 					const el = document.createElement( 'div' );
 					const inset = o.gap + o.width;
+					const halo = o.halo?.width || 0;
 					Object.assign( el.style, {
 						position: 'absolute',
 						left: `${ box.x - inset }px`,
@@ -96,13 +98,20 @@ export async function applyAnnotations( ctx, annotations, targetLocator ) {
 						border: `${ o.width }px solid ${ o.color }`,
 						borderRadius: `${ o.radius + o.gap }px`,
 						boxSizing: 'border-box',
+						// A light ring on both sides of the stroke keeps it legible over the editor's own blue outline.
+						...( halo
+							? {
+									outline: `${ halo }px solid ${ o.halo.color }`,
+									boxShadow: `inset 0 0 0 ${ halo }px ${ o.halo.color }`,
+								}
+							: {} ),
 					} );
 					layer.appendChild( el );
 					extents.push( {
-						x: box.x - inset,
-						y: box.y - inset,
-						width: box.width + inset * 2,
-						height: box.height + inset * 2,
+						x: box.x - inset - halo,
+						y: box.y - inset - halo,
+						width: box.width + ( inset + halo ) * 2,
+						height: box.height + ( inset + halo ) * 2,
 					} );
 				} else if ( item.type === 'badge' ) {
 					const b = s.badge;
@@ -129,10 +138,137 @@ export async function applyAnnotations( ctx, annotations, targetLocator ) {
 						alignItems: 'center',
 						justifyContent: 'center',
 						boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+						...( b.halo?.width
+							? {
+									outline: `${ b.halo.width }px solid ${ b.halo.color }`,
+								}
+							: {} ),
 					} );
 					el.textContent = item.label;
 					layer.appendChild( el );
-					extents.push( { x, y, width: b.size, height: b.size } );
+					const bh = b.halo?.width || 0;
+					extents.push( {
+						x: x - bh,
+						y: y - bh,
+						width: b.size + bh * 2,
+						height: b.size + bh * 2,
+					} );
+				} else if ( item.type === 'arrow' ) {
+					const a = s.arrow;
+					// Unit direction the arrow travels (towards the target) and the point on the box it aims at.
+					const dirs = {
+						top: [ 0, 1 ],
+						bottom: [ 0, -1 ],
+						left: [ 1, 0 ],
+						right: [ -1, 0 ],
+						'top-left': [ 1, 1 ],
+						'top-right': [ -1, 1 ],
+						'bottom-left': [ 1, -1 ],
+						'bottom-right': [ -1, -1 ],
+					};
+					const [ ux, uy ] = dirs[ item.from ] || dirs[ 'top-right' ];
+					const norm = Math.hypot( ux, uy );
+					const dx = ux / norm;
+					const dy = uy / norm;
+					const cx = box.x + box.width / 2;
+					const cy = box.y + box.height / 2;
+					// Aim point: edge midpoint for cardinal directions, the corner for diagonals.
+					let ax = cx;
+					if ( dx > 0 ) {
+						ax = box.x;
+					} else if ( dx < 0 ) {
+						ax = box.x + box.width;
+					}
+					let ay = cy;
+					if ( dy > 0 ) {
+						ay = box.y;
+					} else if ( dy < 0 ) {
+						ay = box.y + box.height;
+					}
+					const tipX = ax - dx * a.gap;
+					const tipY = ay - dy * a.gap;
+					const tailX = tipX - dx * a.length;
+					const tailY = tipY - dy * a.length;
+					// The shaft ends where the head begins.
+					const shaftX = tipX - dx * a.head;
+					const shaftY = tipY - dy * a.head;
+					const px = -dy;
+					const py = dx;
+					const half = a.head * 0.55;
+					const head = [
+						[ tipX, tipY ],
+						[ shaftX + px * half, shaftY + py * half ],
+						[ shaftX - px * half, shaftY - py * half ],
+					]
+						.map( ( pt ) =>
+							pt.map( ( v ) => v.toFixed( 2 ) ).join( ',' )
+						)
+						.join( ' ' );
+					const halo = a.halo?.width || 0;
+					const svgNS = 'http://www.w3.org/2000/svg';
+					const svg = document.createElementNS( svgNS, 'svg' );
+					Object.assign( svg.style, {
+						position: 'absolute',
+						inset: '0',
+						width: '100%',
+						height: '100%',
+						overflow: 'visible',
+					} );
+					const draw = ( color, extra ) => {
+						const line = document.createElementNS( svgNS, 'line' );
+						line.setAttribute( 'x1', tailX.toFixed( 2 ) );
+						line.setAttribute( 'y1', tailY.toFixed( 2 ) );
+						line.setAttribute( 'x2', shaftX.toFixed( 2 ) );
+						line.setAttribute( 'y2', shaftY.toFixed( 2 ) );
+						line.setAttribute( 'stroke', color );
+						line.setAttribute(
+							'stroke-width',
+							String( a.width + extra * 2 )
+						);
+						line.setAttribute( 'stroke-linecap', 'round' );
+						svg.appendChild( line );
+						const poly = document.createElementNS(
+							svgNS,
+							'polygon'
+						);
+						poly.setAttribute( 'points', head );
+						poly.setAttribute( 'fill', color );
+						poly.setAttribute( 'stroke', color );
+						poly.setAttribute(
+							'stroke-width',
+							String( extra * 2 )
+						);
+						poly.setAttribute( 'stroke-linejoin', 'round' );
+						svg.appendChild( poly );
+					};
+					if ( halo ) {
+						draw( a.halo.color, halo );
+					}
+					draw( a.color, 0 );
+					layer.appendChild( svg );
+					const xs = [
+						tailX,
+						tipX,
+						shaftX + px * half,
+						shaftX - px * half,
+					];
+					const ys = [
+						tailY,
+						tipY,
+						shaftY + py * half,
+						shaftY - py * half,
+					];
+					const reach = a.width + halo;
+					extents.push( {
+						x: Math.min( ...xs ) - reach,
+						y: Math.min( ...ys ) - reach,
+						width:
+							Math.max( ...xs ) - Math.min( ...xs ) + reach * 2,
+						height:
+							Math.max( ...ys ) - Math.min( ...ys ) + reach * 2,
+					} );
+					// The target itself must stay in the crop too.
+					extents.push( box );
 				} else if ( item.type === 'dim' ) {
 					const el = document.createElement( 'div' );
 					Object.assign( el.style, {
@@ -157,6 +293,7 @@ export async function applyAnnotations( ctx, annotations, targetLocator ) {
 			style: {
 				outline: style.outline,
 				badge: style.badge,
+				arrow: style.arrow,
 				dim: style.dim,
 			},
 		}

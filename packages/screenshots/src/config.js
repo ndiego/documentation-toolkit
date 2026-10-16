@@ -4,6 +4,9 @@ import { pathToFileURL } from 'node:url';
 import { mergeStyle } from './style.js';
 
 const DEFAULTS = {
+	// Where the YAML specs are: glob patterns relative to the config file (`docs/**/*.shots.yaml` to keep a spec
+	// next to its article, `shots/**/*.yaml` for a mirrored tree). Default: everything under `shotsDir`.
+	specs: null,
 	shotsDir: 'shots',
 	outDir: '../docs/assets/screenshots',
 	docsDir: '../docs',
@@ -46,10 +49,19 @@ export async function loadConfig( configPath ) {
 		...( merged.style || {} ),
 	} );
 	const resolve = ( p ) => ( p ? path.resolve( root, p ) : null );
+	const specs = merged.specs
+		? ( Array.isArray( merged.specs )
+				? merged.specs
+				: [ merged.specs ]
+			).map( String )
+		: null;
 	return {
 		...merged,
 		root,
 		configFile: file,
+		specs,
+		// Spec paths are reported relative to this directory.
+		specsBase: specs ? root : resolve( merged.shotsDir ),
 		shotsDir: resolve( merged.shotsDir ),
 		outDir: resolve( merged.outDir ),
 		docsDir: resolve( merged.docsDir ),

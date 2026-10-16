@@ -8,9 +8,12 @@ pipeline and preview site live in that handbook's own repo.
 | Path | What | Consumed how |
 |---|---|---|
 | `packages/screenshots/` | `@wporg-docs/screenshots`: reproducible WordPress UI screenshots from YAML specs (WordPress Playground + Playwright). Binary `wp-screenshots`. | A documentation repo depends on it and runs `wp-screenshots` from a project directory holding `shots.config.js`, a blueprint and specs. [README](packages/screenshots/README.md), [ARCHITECTURE](packages/screenshots/ARCHITECTURE.md). |
+| `packages/demo-site/` | `@wporg-docs/demo-site`: the Playground environment screenshots are taken in. Pinned WordPress 7.1 and PHP 8.3, the Ipsum theme (the proposed 7.2 default, vendored), a clean wp-admin, a deterministic demo content pack with a per-block showcase. | A project sets `blueprint` in `shots.config.js` to its `blueprint.json`. [README](packages/demo-site/README.md). |
 | `packages/manifest/` | `@wporg-docs/manifest`: validator for `wporg-markdown` importer manifests (path keys, parents first, slug takeover, GitHub sources, one H1, no raw block markup, frozen keys). Binary `wp-validate-manifest`, no dependencies. | `npx wp-validate-manifest manifest.json --docs . --frozen …` locally; the action below in CI. [README](packages/manifest/README.md). |
 | `actions/validate-manifest/` | GitHub composite action wrapping the validator. | `uses: ndiego/documentation-toolkit/actions/validate-manifest@<tag>` |
 | `style/CONVENTIONS.md` | The Markdown conventions every handbook repo follows, derived from importer behaviour. | Read before writing or converting content; linked from each handbook's CONTRIBUTING. |
+| `style/SCREENSHOTS.md` | The screenshot guidelines: subjects and presets, the four canonical frames, annotation style, text in images, alt text. | Read before adding screenshots; the engine enforces the mechanical parts. |
+| `examples/block-editor-handbook/` | A slice of the Block Editor Handbook with specs next to the articles, rendered against the demo site. | The engine's integration fixture and the gallery for the guidelines. `cd` there and run `npx wp-screenshots run`. |
 | `skills/` | Claude Code skills: `screenshots`, `validate-manifest`, `handbook-cutover`. | Installed as the `wporg-docs` plugin (below) so agents follow the same procedures everywhere. |
 
 Planned next: style enforcement (WordPress.org spelling, terminology and formatting as a Vale style package plus a

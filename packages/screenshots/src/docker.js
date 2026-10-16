@@ -30,6 +30,8 @@ export function runInDocker( config, args ) {
 	const engineRoot = installRoot(
 		path.dirname( fileURLToPath( import.meta.url ) )
 	);
+	// Where `npm ci` installs the project's own dependencies (its workspace root when it is one).
+	const projectRoot = installRoot( config.root );
 	const paths = [
 		config.root,
 		config.outDir,
@@ -38,10 +40,12 @@ export function runInDocker( config, args ) {
 		config.blueprint,
 		config.suitesDir,
 		config.workDir,
+		projectRoot,
 	].filter( Boolean );
-	// A path dependency on a sibling checkout lives outside the project; it must be mounted too.
+	// An engine installed from npm sits inside the project's node_modules and needs no install of its own; a
+	// path dependency on a sibling checkout lives outside the project and must be mounted and installed too.
 	const engineLinked = ! engineRoot.startsWith(
-		path.join( config.root, 'node_modules' ) + path.sep
+		path.join( projectRoot, 'node_modules' ) + path.sep
 	);
 	if ( engineLinked ) {
 		paths.push( engineRoot );
@@ -53,7 +57,9 @@ export function runInDocker( config, args ) {
 			path.relative( mountRoot, p ).split( path.sep ).join( '/' )
 		);
 	const project = toContainer( config.root );
-	const volume = `wp-screenshots-${ path.basename( mountRoot ).replace( /[^a-z0-9]/gi, '-' ) }`;
+	const volume = `wp-screenshots-${ path
+		.basename( mountRoot )
+		.replace( /[^a-z0-9]/gi, '-' ) }`;
 	// Map a host --config path into the container; drop it otherwise (the cwd lookup finds it).
 	const mapped = [];
 	for ( let i = 0; i < args.length; i++ ) {
@@ -70,20 +76,23 @@ export function runInDocker( config, args ) {
 			mapped.push( args[ i ] );
 		}
 	}
+	// One `npm ci` per distinct install root, each with its own Linux node_modules volume.
+	const installs = [ ...new Set( [ engineRoot, projectRoot ] ) ];
 	const script = [];
-	const volumes = [ '-v', `${ volume }:${ project }/node_modules` ];
-	if ( engineLinked ) {
-		// Install the engine where it lives (its lockfile is there), in its own Linux node_modules volume.
-		const engine = toContainer( engineRoot );
+	const volumes = [];
+	installs.forEach( ( root, i ) => {
+		const inside = toContainer( root );
 		script.push(
-			`cd ${ shellQuote( engine ) }`,
+			`cd ${ shellQuote( inside ) }`,
 			'npm ci --no-audit --no-fund'
 		);
-		volumes.push( '-v', `${ volume }-engine:${ engine }/node_modules` );
-	}
+		volumes.push(
+			'-v',
+			`${ volume }${ i ? `-${ i }` : '' }:${ inside }/node_modules`
+		);
+	} );
 	script.push(
 		`cd ${ shellQuote( project ) }`,
-		'npm ci --no-audit --no-fund',
 		`npm exec --prefix ${ shellQuote( toContainer( engineRoot ) ) } -- playwright install chromium`,
 		`npx wp-screenshots ${ mapped.map( shellQuote ).join( ' ' ) }`
 	);
