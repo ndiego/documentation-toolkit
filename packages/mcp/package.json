@@ -1,6 +1,6 @@
 {
 	"name": "@wp-docs-toolkit/mcp",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"description": "MCP server for the WordPress documentation toolkit: take reproducible WordPress UI screenshots and validate handbook manifests from Claude, ChatGPT or any MCP client.",
 	"keywords": [
 		"wordpress",
@@ -36,9 +36,12 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.32.1",
-		"@wp-docs-toolkit/manifest": "0.2.1",
-		"@wp-docs-toolkit/screenshots": "0.2.1",
+		"@wp-docs-toolkit/manifest": "0.3.0",
+		"@wp-docs-toolkit/screenshots": "0.3.0",
 		"sharp": "^0.34.0",
 		"zod": "^4.6.7"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

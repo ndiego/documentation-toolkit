@@ -23,15 +23,26 @@ in the documentation project; the tool says so in its result.
 
 ## Setup
 
-### The short way (macOS, Linux)
+### The short way
+
+Once the package is on npm (any platform with Node 22.19+):
+
+```sh
+npx -y @wp-docs-toolkit/mcp install
+```
+
+It registers the server in Claude Desktop and, when the `claude` CLI exists, Claude Code, writing absolute paths so
+the desktop app finds Node even when it comes from nvm, Homebrew or Volta. Chromium downloads on the first
+screenshot. `npx -y @wp-docs-toolkit/mcp uninstall` removes the entries. Flags: `--config <file>` for another Claude
+Desktop config, `--no-claude-code`, `--via path` to launch the local copy directly instead of through npx.
+
+Until it is published, the same from a git checkout (macOS, Linux):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ndiego/wp-docs-toolkit/trunk/scripts/install.sh | sh
 ```
 
-Clones the toolkit into `~/.wp-docs-toolkit`, installs dependencies and Chromium, registers the server in Claude
-Desktop and (if the `claude` CLI exists) Claude Code, and prints the ChatGPT steps. Re-run to update. On Windows,
-follow the manual steps below for now.
+which clones into `~/.wp-docs-toolkit`, installs dependencies and Chromium, then runs the same registration.
 
 ### The manual way
 

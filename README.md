@@ -23,7 +23,9 @@ only enforces it.
 
 ## Share it with a colleague
 
-Paste this in Slack. It is everything a technical colleague needs, from a terminal to a prompt:
+Paste this in Slack. It is everything a technical colleague needs, from a terminal to a prompt. Once the packages
+are on npm, the install line is `npx -y @wp-docs-toolkit/mcp install`; until then, the script below does the same
+from a git checkout:
 
 > **wp-docs-toolkit** takes reproducible screenshots of the WordPress UI from a prompt. Install (macOS/Linux, needs
 > Node 22.19+ and git; about two minutes):
@@ -62,7 +64,7 @@ repo, for example a git submodule at `toolkit/`:
 
 ```sh
 git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
-( cd toolkit && git checkout v0.2.1 && npm ci )
+( cd toolkit && git checkout v0.3.0 && npm ci )
 ```
 
 ```json
@@ -72,7 +74,7 @@ git submodule add https://github.com/ndiego/wp-docs-toolkit.git toolkit
 The engine's dependencies install at the toolkit root (`npm ci` there), not inside the package, because the repo is
 an npm workspace. Projects that install Chromium in a `postinstall` use `npm exec --prefix ../toolkit -- playwright install chromium`.
 
-**The action.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.2.1` with `manifest`, `docs`,
+**The action.** `uses: ndiego/wp-docs-toolkit/actions/validate-manifest@v0.3.0` with `manifest`, `docs`,
 optional `frozen`, `allow-missing-parent` and `strict` inputs.
 
 **The skills.** The repo is a Claude Code plugin and its own marketplace:
@@ -112,9 +114,20 @@ action against its own fixture on every pull request.
 
 ## Releasing
 
-1. Update `CHANGELOG.md` and bump the version in the root and both package manifests (one version for everything).
+1. Update `CHANGELOG.md` and bump the version in every package manifest, `.claude-plugin/plugin.json` and the
+   `version` in `packages/mcp/src/server.js` (one version for everything; inter-package dependencies pin it).
 2. Tag `vX.Y.Z` on `trunk` and push the tag.
-3. Consumers check out the new tag inside their `toolkit/` submodule and commit the pointer.
+3. Publish to npm, in dependency order, from a logged-in shell (`npm login`; the `@wp-docs-toolkit` scope must exist
+   as an npm organisation, free for public packages, or be replaced by the publisher's own scope):
+   ```sh
+   npm publish -w @wp-docs-toolkit/manifest
+   npm publish -w @wp-docs-toolkit/demo-site
+   npm publish -w @wp-docs-toolkit/screenshots
+   npm publish -w @wp-docs-toolkit/mcp
+   ```
+   `npm pack --dry-run -w <package>` shows what each one ships. After the first publish, the install line for
+   colleagues is `npx -y @wp-docs-toolkit/mcp install` and the Slack message in this README should say so.
+4. Consumers check out the new tag inside their `toolkit/` submodule and commit the pointer.
 
 ## History
 

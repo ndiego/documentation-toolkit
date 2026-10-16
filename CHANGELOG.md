@@ -2,8 +2,11 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
-## Unreleased
+## 0.3.0 (2026-10-16)
 
+- MCP: `wp-docs-mcp install` / `uninstall` register and remove the server in Claude Desktop and Claude Code with
+  absolute paths; when run through `npx` it registers a pinned `npx -y @wp-docs-toolkit/mcp@<version>` launch.
+  All packages carry `publishConfig.access: public` and pin each other at the shared version, ready for npm.
 - New package `@wp-docs-toolkit/mcp`: an MCP server (stdio, or Streamable HTTP with `--http`) with `screenshot`,
   `list_presets` and `validate_manifest` tools, so Claude Desktop, Claude Code, ChatGPT and other MCP clients can
   take screenshots by asking. The repo's `.mcp.json` registers it for Claude Code. `shootPreset()` is now a library

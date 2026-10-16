@@ -2,6 +2,9 @@
 /**
  * wp-docs-mcp: run the toolkit's MCP server.
  *
+ *   wp-docs-mcp install               register the server in Claude Desktop and Claude Code (absolute paths)
+ *                                     [--config <file>] [--no-claude-code] [--via npx|path]
+ *   wp-docs-mcp uninstall             remove those entries
  *   wp-docs-mcp                       stdio (Claude Desktop, Claude Code, Cursor, …)
  *   wp-docs-mcp --http [--port 3920]  Streamable HTTP on http://127.0.0.1:<port>/mcp (ChatGPT and remote clients,
  *                                     put it behind a tunnel or a reverse proxy with auth)
@@ -26,9 +29,23 @@ const flag = ( name ) => {
 };
 if ( args.includes( '-h' ) || args.includes( '--help' ) ) {
 	console.log(
-		'Usage: wp-docs-mcp [--http] [--port <n>] [--host <addr>] [--project <shots.config.js>]'
+		'Usage: wp-docs-mcp [install | uninstall] [--http] [--port <n>] [--host <addr>] [--token <secret>] [--idle <minutes>] [--project <shots.config.js>]'
 	);
 	process.exit( 0 );
+}
+if ( args[ 0 ] === 'install' ) {
+	const { runInstall } = await import( './install.js' );
+	process.exit(
+		runInstall( {
+			config: flag( '--config' ),
+			claudeCode: ! args.includes( '--no-claude-code' ),
+			via: flag( '--via' ) || 'auto',
+		} )
+	);
+}
+if ( args[ 0 ] === 'uninstall' ) {
+	const { runUninstall } = await import( './install.js' );
+	process.exit( runUninstall( { config: flag( '--config' ) } ) );
 }
 const options = {
 	project: flag( '--project' ),

@@ -49,58 +49,10 @@ if [ "$(uname -s)" = "Linux" ] && ! node -e "import('@playwright/test').then(({c
 fi
 
 SERVER="$HOME_DIR/packages/mcp/src/cli.js"
-
-# Claude Desktop: merge our entry into the config, keep everything else, back the file up first.
-case "$(uname -s)" in
-	Darwin) DEFAULT_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json" ;;
-	*)      DEFAULT_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/Claude/claude_desktop_config.json" ;;
-esac
-CONFIG="${CLAUDE_DESKTOP_CONFIG:-$DEFAULT_CONFIG}"
-mkdir -p "$(dirname "$CONFIG")"
-[ -f "$CONFIG" ] && cp "$CONFIG" "$CONFIG.bak-$(date +%Y%m%d%H%M%S)"
-CONFIG="$CONFIG" NODE_BIN="$NODE_BIN" SERVER="$SERVER" node - <<'JS'
-const fs = require( 'node:fs' );
-const file = process.env.CONFIG;
-let data = {};
-if ( fs.existsSync( file ) ) {
-	try {
-		data = JSON.parse( fs.readFileSync( file, 'utf8' ) ) || {};
-	} catch ( e ) {
-		console.error( `install.sh: ${ file } is not valid JSON; fix it and re-run.` );
-		process.exit( 1 );
-	}
-}
-data.mcpServers = data.mcpServers || {};
-data.mcpServers[ 'wp-docs-toolkit' ] = { command: process.env.NODE_BIN, args: [ process.env.SERVER ] };
-fs.writeFileSync( file, JSON.stringify( data, null, 2 ) + '\n' );
-JS
-say "Registered in Claude Desktop: $CONFIG"
-
-# Claude Code, when present: user scope so it is available in every project.
-CLAUDE_CODE_LINE="Not found on this machine. Later: claude mcp add --scope user wp-docs-toolkit -- $NODE_BIN $SERVER"
-if [ -z "${WP_DOCS_TOOLKIT_NO_CLAUDE_CODE:-}" ] && command -v claude >/dev/null 2>&1; then
-	claude mcp remove wp-docs-toolkit --scope user >/dev/null 2>&1 || true
-	if claude mcp add --scope user wp-docs-toolkit -- "$NODE_BIN" "$SERVER" >/dev/null 2>&1; then
-		say "Registered in Claude Code (user scope)"
-		CLAUDE_CODE_LINE="Already registered. Ask the same thing in any project."
-	fi
-fi
-
-cat <<EOT
-
-Done. Next:
-
-  Claude Desktop  Quit and reopen it. In a new chat the tools menu lists "wp-docs-toolkit". Try:
-                  "Take a screenshot of the General Settings page in wp-admin."
-                  The first screenshot takes ~15 s (WordPress boots); later ones a few seconds.
-
-  Claude Code     $CLAUDE_CODE_LINE
-
-  ChatGPT         ChatGPT only connects to remote HTTPS servers. Run the server with a token and expose it:
-                    cd $HOME_DIR && npx wp-docs-mcp --http --token "\$(openssl rand -hex 16)"
-                    cloudflared tunnel --url http://127.0.0.1:3920      # prints an https://....trycloudflare.com URL
-                  then in ChatGPT: Settings → Apps & Connectors → Advanced → Developer mode, create a connector with
-                  https://<that host>/mcp/<your token> and "No authentication". Stop both when done.
-
-  Update later    re-run this script. Uninstall: delete $HOME_DIR and the "wp-docs-toolkit" entry in the config.
-EOT
+# Registration (Claude Desktop config merge with backup, Claude Code user scope) lives in the package itself.
+INSTALL_ARGS="--via path"
+[ -n "${CLAUDE_DESKTOP_CONFIG:-}" ] && INSTALL_ARGS="$INSTALL_ARGS --config $CLAUDE_DESKTOP_CONFIG"
+[ -n "${WP_DOCS_TOOLKIT_NO_CLAUDE_CODE:-}" ] && INSTALL_ARGS="$INSTALL_ARGS --no-claude-code"
+# shellcheck disable=SC2086
+"$NODE_BIN" "$SERVER" install $INSTALL_ARGS
+exit 0

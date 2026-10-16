@@ -45,7 +45,7 @@ const FRAMES = [
 export function createServer( options = {} ) {
 	const server = new McpServer( {
 		name: 'wp-docs-toolkit',
-		version: '0.2.1',
+		version: '0.3.0',
 	} );
 	const maxWidth = options.maxWidth ?? 1400;
 	const warm = options.warm || createWarmSession( options );
