@@ -13,6 +13,7 @@ import { targetNames } from './targets.js';
 import { sceneNames } from './scenes.js';
 import { presets, presetNames } from './presets.js';
 import { shootPreset } from './shoot.js';
+import { isSupportedNode, unsupportedNodeMessage } from './runtime.js';
 
 const HELP = `wp-screenshots: reproducible WordPress UI screenshots from YAML specs
 
@@ -324,11 +325,10 @@ async function doctor( config ) {
 		);
 		ok = ok && pass;
 	};
-	const [ major, minor ] = process.versions.node.split( '.' ).map( Number );
 	check(
 		`Node ${ process.versions.node }`,
-		major > 22 || ( major === 22 && minor >= 19 ),
-		'Node 22.19+ is required (fs.globSync, Playground CLI)'
+		isSupportedNode( process.versions.node ),
+		unsupportedNodeMessage() || ''
 	);
 	check(
 		config.fallback

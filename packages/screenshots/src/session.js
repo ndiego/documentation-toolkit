@@ -10,6 +10,7 @@ import { launchBrowser } from './browser.js';
 import { createSite } from './site.js';
 import { blueprintForSuite } from './config.js';
 import { hashFile } from './files.js';
+import { ensureSupportedNode } from './runtime.js';
 
 /**
  * Boot Playground and the browser for a suite.
@@ -56,6 +57,7 @@ export class Session {
 
 	/** Boot (or reboot) the environment. */
 	async boot() {
+		ensureSupportedNode();
 		await this.close();
 		const { config, log } = this;
 		this.env = await startPlayground( {

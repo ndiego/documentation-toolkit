@@ -20,3 +20,13 @@ export {
 } from './shoot.js';
 export { presets, presetNames, expandPreset } from './presets.js';
 export { openSession, Session } from './session.js';
+export {
+	isSupportedNode,
+	unsupportedNodeMessage,
+	ensureSupportedNode,
+	findSupportedNode,
+	candidateNodeBinaries,
+	nodeVersionOf,
+	NODE_MIN,
+	NODE_MAX_MAJOR,
+} from './runtime.js';

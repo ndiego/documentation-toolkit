@@ -9,8 +9,8 @@ The design contract between the engine and a documentation project is in [ARCHIT
 
 ## Setup
 
-Requirements: Node 22.19 or newer (24 recommended), about 1 GB of disk for dependencies and Chromium. No Docker, no
-database, no local WordPress install.
+Requirements: Node 22.19 to 25 (24 recommended; Playground's native module has no Node 26 binaries yet), about
+1 GB of disk for dependencies and Chromium. No Docker, no database, no local WordPress install.
 
 The engine is consumed from a *project directory* inside a documentation repo that holds `shots.config.js`, a
 Playground `blueprint/` (or a reference to the bundled demo site), and YAML specs.

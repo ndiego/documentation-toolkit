@@ -2,8 +2,12 @@
 
 All packages in this repository share one version. Consumers pin a tag.
 
-## Unreleased
+## 0.3.4 (2026-10-16)
 
+- Node 26 is refused with an explanation instead of crashing inside Playground (its native module ships binaries
+  for Node 22.19 to 25 only). `wp-docs-mcp install` registers a supported Node found on the machine when the
+  default one is unsupported, and takes `--node <binary>`. Engines fields say `>=22.19 <26`. Found on a
+  colleague's Node 26 machine.
 - READMEs rewritten for npm readers: install from the registry first, the git checkout as the development path.
 - MCP: free-form screenshots. `screenshot` works without a preset given `scene` and `steps` in the engine's
   vocabulary (validated like a YAML spec), and takes `viewport`, `fit` and `mask`; a `vocabulary` tool lists scenes,

@@ -3,7 +3,7 @@
  * wp-docs-mcp: run the toolkit's MCP server.
  *
  *   wp-docs-mcp install               register the server in Claude Desktop and Claude Code (absolute paths)
- *                                     [--config <file>] [--no-claude-code] [--via npx|path]
+ *                                     [--config <file>] [--no-claude-code] [--via npx|path] [--node <binary>]
  *   wp-docs-mcp uninstall             remove those entries
  *   wp-docs-mcp                       stdio (Claude Desktop, Claude Code, Cursor, …)
  *   wp-docs-mcp --http [--port 3920]  Streamable HTTP on http://127.0.0.1:<port>/mcp (ChatGPT and remote clients,
@@ -21,6 +21,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer, createWarmSession } from './server.js';
+import { unsupportedNodeMessage } from '@wp-docs-toolkit/screenshots';
 
 const args = process.argv.slice( 2 );
 const flag = ( name ) => {
@@ -40,12 +41,18 @@ if ( args[ 0 ] === 'install' ) {
 			config: flag( '--config' ),
 			claudeCode: ! args.includes( '--no-claude-code' ),
 			via: flag( '--via' ) || 'auto',
+			node: flag( '--node' ),
 		} )
 	);
 }
 if ( args[ 0 ] === 'uninstall' ) {
 	const { runUninstall } = await import( './install.js' );
 	process.exit( runUninstall( { config: flag( '--config' ) } ) );
+}
+// The server can start on any Node, but screenshots cannot: say so once, loudly, before a client connects.
+const nodeProblem = unsupportedNodeMessage();
+if ( nodeProblem ) {
+	console.error( `wp-docs-mcp: ${ nodeProblem }` );
 }
 const options = {
 	project: flag( '--project' ),

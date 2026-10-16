@@ -29,7 +29,10 @@ in the documentation project; the tool says so in its result.
 
 ## Setup
 
-Requirements: Node 22.19 or newer. Chromium (about 150 MB) and a WordPress build download on the first screenshot.
+Requirements: Node 22.19 to 25. Node 26 is not supported yet because WordPress Playground's native module ships no
+binaries for it; `install` registers a supported Node found in nvm, Volta, fnm, asdf or Homebrew when the default
+is newer (`--node <binary>` to choose one). Chromium (about 150 MB) and a WordPress build download on the first
+screenshot.
 
 ### One command
 

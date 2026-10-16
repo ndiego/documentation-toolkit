@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+	npxCliFor,
+	chooseNode,
 	launchSpec,
 	registerDesktop,
 	runInstall,
@@ -94,5 +96,26 @@ describe( 'install', () => {
 		assert.ok(
 			desktopConfigPath().endsWith( 'claude_desktop_config.json' )
 		);
+	} );
+
+	it( 'finds the npx script beside a Node binary and falls back to the running npm', () => {
+		assert.ok(
+			npxCliFor( process.execPath ).endsWith(
+				path.join( 'npm', 'bin', 'npx-cli.js' )
+			)
+		);
+		assert.ok(
+			npxCliFor( '/nowhere/bin/node' ).endsWith(
+				path.join( 'npm', 'bin', 'npx-cli.js' )
+			)
+		);
+	} );
+
+	it( 'chooses the running Node when it is supported and registers it in the launch', () => {
+		const choice = chooseNode();
+		assert.equal( choice.switched, false );
+		assert.equal( choice.bin, process.execPath );
+		const spec = launchSpec( 'npx', choice.bin );
+		assert.equal( spec.command, process.execPath );
 	} );
 } );

@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { presets, presetNames } from './presets.js';
 import { loadSpec } from './spec.js';
 import { runShots } from './runner.js';
+import { ensureSupportedNode } from './runtime.js';
 
 /**
  * Throw a user-facing error (printed without a stack trace by the CLI) when Playwright's Chromium is missing.
@@ -94,6 +95,7 @@ export async function shootPreset( config, options ) {
 			{ name: 'UserError' }
 		);
 	}
+	ensureSupportedNode();
 	await ensureChromium();
 	const params = {};
 	for ( const param of Object.keys( name ? presets[ name ].params : {} ) ) {

@@ -3,6 +3,10 @@
  * config by hand. Writes absolute paths, because the desktop app does not see the user's shell PATH (nvm,
  * Homebrew and Volta installs all break a bare "npx").
  *
+ * The registered launch uses a supported Node (22.19 to 25): the current one when it qualifies, otherwise the newest
+ * supported one found in nvm, Volta, fnm, asdf or Homebrew, since WordPress Playground's native module has no
+ * binaries beyond that.
+ *
  * How the server is launched afterwards depends on where this copy lives:
  *   - run through `npx -y @wp-docs-toolkit/mcp` (npm's temporary cache): register `node <npx-cli.js> -y
  *     @wp-docs-toolkit/mcp@<version>`, so updates follow npm and the cache may be evicted safely;
@@ -14,6 +18,12 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import {
+	findSupportedNode,
+	nodeVersionOf,
+	isSupportedNode,
+	NODE_MAX_MAJOR,
+} from '@wp-docs-toolkit/screenshots';
 
 const here = path.dirname( fileURLToPath( import.meta.url ) );
 const pkg = createRequire( import.meta.url )( '../package.json' );
@@ -44,27 +54,86 @@ export function desktopConfigPath() {
 /**
  * How to launch the server from any environment: absolute node binary plus arguments.
  * @param {'auto'|'npx'|'path'} via
+ * @param {string|null}         [nodeBin] Node binary to register (default: the running one)
  * @return {{command: string, args: string[], how: string}} the launch spec
  */
-export function launchSpec( via = 'auto' ) {
+export function launchSpec( via = 'auto', nodeBin = null ) {
 	const cli = path.join( here, 'cli.js' );
 	const inNpxCache = /[\\/]_npx[\\/]/.test( cli );
 	const useNpx = via === 'npx' || ( via === 'auto' && inNpxCache );
+	const node = nodeBin || process.execPath;
 	if ( useNpx ) {
-		const globalRoot = execFileSync( 'npm', [ 'root', '-g' ], {
-			encoding: 'utf8',
-		} ).trim();
-		const npxCli = path.join( globalRoot, 'npm/bin/npx-cli.js' );
-		if ( ! fs.existsSync( npxCli ) ) {
-			throw new Error( `npx entry script not found at ${ npxCli }` );
-		}
+		const npxCli = npxCliFor( node );
 		return {
-			command: process.execPath,
+			command: node,
 			args: [ npxCli, '-y', `${ pkg.name }@${ pkg.version }` ],
-			how: `npx ${ pkg.name }@${ pkg.version }`,
+			how: `npx ${ pkg.name }@${ pkg.version } (Node at ${ node })`,
 		};
 	}
-	return { command: process.execPath, args: [ cli ], how: cli };
+	return {
+		command: node,
+		args: [ cli ],
+		how: `${ cli } (Node at ${ node })`,
+	};
+}
+
+/**
+ * The npx entry script that belongs to a Node binary (nvm, Homebrew kegs, Volta and fnm all keep npm at
+ * ../lib/node_modules/npm next to bin/node); falls back to the running npm's.
+ * @param {string} nodeBin
+ * @return {string} path to npx-cli.js
+ */
+export function npxCliFor( nodeBin ) {
+	const beside = path.resolve(
+		path.dirname( nodeBin ),
+		'../lib/node_modules/npm/bin/npx-cli.js'
+	);
+	if ( fs.existsSync( beside ) ) {
+		return beside;
+	}
+	const globalRoot = execFileSync( 'npm', [ 'root', '-g' ], {
+		encoding: 'utf8',
+	} ).trim();
+	const current = path.join( globalRoot, 'npm/bin/npx-cli.js' );
+	if ( ! fs.existsSync( current ) ) {
+		throw new Error( `npx entry script not found at ${ current }` );
+	}
+	return current;
+}
+
+/**
+ * Decide which Node the registered server runs on: an explicit one, the current one if supported, or the newest
+ * supported one found on the machine.
+ * @param {string} [explicit] --node value
+ * @return {{bin: string, version: string, switched: boolean, note: string|null}} the choice
+ */
+export function chooseNode( explicit ) {
+	if ( explicit ) {
+		const version = nodeVersionOf( explicit );
+		if ( ! version ) {
+			throw new Error(
+				`--node ${ explicit } is not a runnable Node binary`
+			);
+		}
+		return {
+			bin: explicit,
+			version,
+			switched: true,
+			note: isSupportedNode( version )
+				? null
+				: `Node ${ version } at ${ explicit } is outside the supported range (22.19 to ${ NODE_MAX_MAJOR }); screenshots will fail there.`,
+		};
+	}
+	const found = findSupportedNode();
+	if ( found ) {
+		return { ...found, note: null };
+	}
+	return {
+		bin: process.execPath,
+		version: process.versions.node,
+		switched: false,
+		note: `This machine's Node ${ process.versions.node } is not supported (WordPress Playground's native module covers Node 22.19 to ${ NODE_MAX_MAJOR }) and no supported Node was found in nvm, Volta, fnm, asdf or Homebrew. Install one (nvm install 24, or brew install node@24) and run this install again; it will register that Node.`,
+	};
 }
 
 /**
@@ -139,7 +208,14 @@ export function registerClaudeCode( spec ) {
  */
 export function runInstall( options = {} ) {
 	const log = options.log || console.log;
-	const spec = launchSpec( options.via || 'auto' );
+	const node = chooseNode( options.node );
+	if ( node.switched ) {
+		log( `Using Node ${ node.version } at ${ node.bin } for the server.` );
+	}
+	if ( node.note ) {
+		log( `Warning: ${ node.note }` );
+	}
+	const spec = launchSpec( options.via || 'auto', node.bin );
 	const file = options.config || desktopConfigPath();
 	const backup = registerDesktop( file, spec );
 	log(
