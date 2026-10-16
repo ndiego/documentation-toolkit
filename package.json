@@ -14,7 +14,7 @@
 	"scripts": {
 		"lint": "eslint . && prettier --check .",
 		"format": "prettier --write .",
-		"test": "npm test --workspaces"
+		"test": "npm test --workspaces --if-present"
 	},
 	"devDependencies": {
 		"@wordpress/eslint-plugin": "^27.1.0",
